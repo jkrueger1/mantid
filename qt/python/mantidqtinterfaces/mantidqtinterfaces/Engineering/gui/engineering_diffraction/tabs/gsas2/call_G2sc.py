@@ -1,0 +1,59 @@
+import os
+import sys
+
+path_to_gsas2 = sys.argv[1]
+save_directory = sys.argv[2]
+data_directory = sys.argv[3]
+refinement_method = sys.argv[4]
+input_data_file = sys.argv[5]
+input_data_file_2 = sys.argv[6]
+instrument_file = sys.argv[7]
+instrument_file_2 = sys.argv[8]
+phase_file = sys.argv[9]
+project_name = sys.argv[10]
+
+x_min = [float(sys.argv[11]), float(sys.argv[12])]
+x_max = [float(sys.argv[13]), float(sys.argv[14])]
+
+project_path = save_directory + project_name + '.gpx'
+
+sys.path.insert(0, path_to_gsas2 + 'GSASII')
+import GSASIIscriptable as G2sc # noqa: E402
+# Maybe add a try catch statement?
+
+
+def HistStats(gpx):
+    '''prints profile rfactors for all histograms'''
+    print(u"*** profile Rwp, " + os.path.split(gpx.filename)[1])
+    for hist in gpx.histograms():
+        print("\t{:20s}: {:.2f}".format(hist.name, hist.get_wR()))
+    print("")
+    gpx.save()
+
+
+# create a project with a default project name
+gpx = G2sc.G2Project(filename=project_path)
+
+# setup step 1: add two histograms to the project
+histogram_1 = gpx.add_powder_histogram(os.path.join(data_directory, input_data_file),
+                                       os.path.join(data_directory, instrument_file))
+histogram_2 = gpx.add_powder_histogram(os.path.join(data_directory, input_data_file_2),
+                                       os.path.join(data_directory, instrument_file_2))
+# setup step 2: add a phase and link it to the previous histograms
+phase_0 = gpx.add_phase(os.path.join(data_directory, phase_file),
+                        phasename=phase_file[:-3],
+                        histograms=[histogram_1, histogram_2])
+
+# not in tutorial: increase # of cycles to improve convergence
+gpx.data['Controls']['data']['max cyc'] = 8  # not in API
+
+# tutorial step 4: turn on background refinement (Hist)
+refdict0 = {"set": {"Background": {"no. coeffs": 3, "refine": True}}}
+
+if x_min and x_max:
+    histogram_1.set_refinements({'Limits': [x_min[0], x_max[0]]})
+    histogram_2.set_refinements({'Limits': [x_min[1], x_max[1]]})
+
+gpx.save(project_path)
+gpx.do_refinements([refdict0])
+HistStats(gpx)
