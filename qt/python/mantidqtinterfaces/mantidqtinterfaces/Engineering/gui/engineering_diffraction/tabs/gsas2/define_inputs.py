@@ -1,34 +1,51 @@
 import os
 import time
 
-
-'''Inputs'''
+# _INPUT_WORKSPACE_FILENAME = "ENGINX_280625_focused_bank_1.nxs"
+# _PHASE_FILENAME_1 = "Fe-gamma.cif"
+# _PHASE_FILENAME_2 = "Fe-alpha.cif"
+# _INST_PARAM_FILENAME = "template_ENGINX_241391_236516_North_bank.prm"
 path_to_gsas2 = "/home/danielmurphy/gsas2/"
 save_directory = "/home/danielmurphy/Downloads/GSASdata/new_outputs/"
-data_directory = "/home/danielmurphy/Downloads/GSASdata/"
+data_directory = "/home/danielmurphy/Desktop/"
 refinement_method = "Pawley"
-input_data_files = ["PBSO4.XRA", "PBSO4.CWN"]
-instrument_files = ["INST_XRY.PRM","inst_d1a.prm"]
-phase_file = "PbSO4-Wyckoff.cif"
-project_name = "mantid_test"
+input_data_files = "ENGINX_305761_307521_bank_1_TOF.gss"  # "ENGINX_280625_focused_bank_1.abc"
+instrument_files = "ENGINX_305738_bank_1.prm"
+phase_file = "CEO2.cif"
+# phase_file2 = "Fe-alpha.cif"
+project_name = "mantid_enginx"
+#
+x_min = 0
+x_max = 0
 
-x_min = [16.0,19.0]
-x_max = [158.4,153.0]
+
+'''Inputs Tutorial'''
+# path_to_gsas2 = "/home/danielmurphy/gsas2/"
+# save_directory = "/home/danielmurphy/Downloads/GSASdata/new_outputs/"
+# data_directory = "/home/danielmurphy/Downloads/GSASdata/"
+# refinement_method = "Pawley"
+# input_data_files = ["PBSO4.XRA", "PBSO4.CWN"]
+# instrument_files = ["INST_XRY.PRM","inst_d1a.prm"]
+# phase_file = "PbSO4-Wyckoff.cif"
+# project_name = "mantid_test"
+#
+# x_min = [16.0,19.0]
+# x_max = [158.4,153.0]
 
 
 '''Validation'''
-if len(input_data_files) != len(instrument_files):
-    raise ValueError(f"The number of input_data_files (histograms) ({len(input_data_files)}) must equal the"
-                     + f"number of instrument_files ({len(instrument_files)})")
-
-if len(x_min) != len(x_max):
-    raise ValueError(f"The number of x_min values ({len(x_min)}) must equal the"
-                     + f"number of x_max values ({len(x_max)})")
-
-if len(x_min) != len(input_data_files):
-    raise ValueError(f"The number of x_min values ({len(x_min)}) must equal the"
-                     + f"number of input_data_files (histograms) ({len(input_data_files)})")
-
+# if len(input_data_files) != len(instrument_files):
+#     raise ValueError(f"The number of input_data_files (histograms) ({len(input_data_files)}) must equal the"
+#                      + f"number of instrument_files ({len(instrument_files)})")
+#
+# if len(x_min) != len(x_max):
+#     raise ValueError(f"The number of x_min values ({len(x_min)}) must equal the"
+#                      + f"number of x_max values ({len(x_max)})")
+#
+# if len(x_min) != len(input_data_files):
+#     raise ValueError(f"The number of x_min values ({len(x_min)}) must equal the"
+#                      + f"number of input_data_files (histograms) ({len(input_data_files)})")
+#
 
 '''exec'''
 start = time.time()
@@ -39,16 +56,17 @@ os.system(path_to_gsas2 + "bin/python "
           + save_directory + " "
           + data_directory + " "
           + refinement_method + " "
-          + input_data_files[0] + " "
-          + input_data_files[1] + " "
-          + instrument_files[0] + " "
-          + instrument_files[1] + " "
+          + input_data_files + " "
+          # + input_data_files + " "
+          + instrument_files + " "
+          # + instrument_files[1] + " "
           + phase_file + " "
           + project_name + " "
-          + str(x_min[0]) + " "
-          + str(x_min[1]) + " "
-          + str(x_max[0]) + " "
-          + str(x_max[1])
+          + str(x_min) + " "
+          # + str(x_min[1]) + " "
+          + str(x_max) + " "
+          # + str(x_max[1])
+          # + phase_file2
           )
 gsas_runtime = time.time() - start
 print(f"\nGSASII Complete in {gsas_runtime} seconds.\n")
