@@ -36,20 +36,19 @@ def HistStats(gpx):
 # create a project with a default project name
 gpx = G2sc.G2Project(filename=project_path)
 
-# setup step 1: add two histograms to the project
-histogram_1 = gpx.add_powder_histogram(os.path.join(data_directory, input_data_file),
-                                       os.path.join(data_directory, instrument_file))
-# histogram_2 = gpx.add_powder_histogram(os.path.join(data_directory, input_data_file_2),
-#                                        os.path.join(data_directory, instrument_file_2))
-# setup step 2: add a phase and link it to the previous histograms
-# for phase_file in phase_files:
 print(os.path.join(data_directory, phase_file), "\n")
-phase = gpx.add_phase(os.path.join(data_directory, phase_file),
-                      histograms=histogram_1)
-#                           phasename=phase_file[:-3],
-#                           histograms=histogram_1)
+phase = gpx.add_phase(os.path.join(data_directory, phase_file))
 
-# not in tutorial: increase # of cycles to improve convergence
+histogram_1 = gpx.add_powder_histogram(datafile=os.path.join(data_directory, input_data_file),
+                                       iparams=os.path.join(data_directory, instrument_file),
+                                       databank=1,  # indexing starts at 1
+                                       phases=[phase]
+                                       )
+
+phase.data['General']['doPawley'] = True
+# for i in G2sc.dictDive(phase.data['General'], 'paw'): print(i)
+
+# increase # of cycles to improve convergence
 gpx.data['Controls']['data']['max cyc'] = 8  # not in API
 
 # tutorial step 4: turn on background refinement (Hist)
