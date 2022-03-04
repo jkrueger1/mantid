@@ -82,7 +82,7 @@ for histogram_index, input_data_file in enumerate(histograms):
     gsas_histograms.append(gpx.add_powder_histogram(datafile=os.path.join(data_directory, input_data_file),
                                                     iparams=os.path.join(data_directory, iparams_input[histogram_index]),
                                                     databank=1,  # indexing starts at 1
-                                                    phases=[gsas_phases[0]]
+                                                    phases=gsas_phases
                                                     ))
 if refinement_method == "Pawley":
     for gsas_phase in gsas_phases:
