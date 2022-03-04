@@ -8,20 +8,22 @@ import time
 # data_directory = "/home/danielmurphy/Downloads/GSASdata/"
 # refinement_method = "Pawley"
 # input_data_files = ["PBSO4.XRA", "PBSO4.CWN"]
+# histogram_indexing = []
 # instrument_files = ["INST_XRY.PRM","inst_d1a.prm"]
 # phase_files = ["PbSO4-Wyckoff.cif"]
 # project_name = "mantid_test"
 #
 # x_min = [16.0,19.0]
 # x_max = [158.4,153.0]
-
+#
 
 '''Inputs Mantid'''
 path_to_gsas2 = "/home/danielmurphy/gsas2/"
 save_directory = "/home/danielmurphy/Downloads/GSASdata/new_outputs/"
 data_directory = "/home/danielmurphy/Desktop/GSASMantiddata_030322/"
 refinement_method = "Pawley"
-input_data_files = ["ENGINX_305761_307521_all_banks_TOF.gss"]  #"ENGINX_305761_307521_bank_1_TOF.gss"  # "ENGINX_280625_focused_bank_1.abc"
+input_data_files = ["ENGINX_305761_307521_all_banks_TOF.gss"]  # ["ENGINX_305761_307521_bank_1_TOF.gss"]
+histogram_indexing = [1]  # assume only indexing when using 1 histogram file
 instrument_files = ["ENGINX_305738_bank_1.prm"]
 phase_files = ["7217887.cif"]
 project_name = "mantid_enginx1"
@@ -30,8 +32,8 @@ x_min = []
 x_max = []
 
 '''Matching Dictionary'''
-number_of_inputs = {'histograms': len(input_data_files), 'phases': len(phase_files),
-                    'instruments': len(instrument_files), 'limits': len(x_min)}
+number_of_inputs = {'data_files': len(input_data_files), 'histogram_indices': len(histogram_indexing),
+                    'phases': len(phase_files), 'instruments': len(instrument_files), 'limits': len(x_min)}
 
 
 '''Validation'''
@@ -39,9 +41,16 @@ if len(x_min) != len(x_max):
     raise ValueError(f"The number of x_min values ({number_of_inputs['x_min']}) must equal the"
                      + f"number of x_max values ({number_of_inputs['x_max']})")
 
-if number_of_inputs['limits'] != 0 and number_of_inputs['limits'] != number_of_inputs['histograms']:
+number_histograms = len(input_data_files)
+if histogram_indexing and len(input_data_files) == 1:
+    number_histograms = len(histogram_indexing)
+if number_of_inputs['limits'] != 0 and number_of_inputs['limits'] != number_histograms:
     raise ValueError(f"The number of x_min values ({number_of_inputs['x_min']}) must equal the"
-                     + f"number of input_data_files (histograms) ({number_of_inputs['histograms']}))")
+                     + f"number of histograms ({number_histograms}))")
+
+if histogram_indexing and len(input_data_files) > 1:
+    raise ValueError(f"Histogram indexing can is currently only supported, when the "
+                     + f"number of input_data_files ({number_of_inputs['histograms']}) == 1")
 
 
 '''exec'''
@@ -53,13 +62,16 @@ main_call = (path_to_gsas2 + "bin/python "
              + data_directory + " "
              + refinement_method + " "
              + project_name + " "
-             + str(number_of_inputs['histograms']) + " "
+             + str(number_of_inputs['data_files']) + " "
+             + str(number_of_inputs['histogram_indices']) + " "
              + str(number_of_inputs['phases']) + " "
              + str(number_of_inputs['instruments']) + " "
              + str(number_of_inputs['limits']) + " ")
 
-for histogram in input_data_files:
-    main_call += (histogram + " ")
+for input_data_file in input_data_files:
+    main_call += (input_data_file + " ")
+for histogram_index in histogram_indexing:
+    main_call += (str(histogram_index) + " ")
 for phase in phase_files:
     main_call += (phase + " ")
 for instrument in instrument_files:

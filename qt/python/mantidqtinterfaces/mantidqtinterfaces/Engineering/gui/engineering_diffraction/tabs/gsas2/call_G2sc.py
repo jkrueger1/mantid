@@ -16,17 +16,27 @@ refinement_method = sys.argv[counter()]
 project_name = sys.argv[counter()]
 
 # number of each dynamic input
-number_histograms = int(sys.argv[counter()])
+number_data_files = int(sys.argv[counter()])
+number_histogram_indices = int(sys.argv[counter()])
 number_phases = int(sys.argv[counter()])
 number_instruments = int(sys.argv[counter()])
 number_limits = int(sys.argv[counter()])
 
+data_files = []
+for i in range(number_data_files):
+    data_files.append(sys.argv[counter()])
 
-histograms = []
-for i in range(number_histograms):
-    histograms.append(sys.argv[counter()])
+histogram_indexing = []
+for i in range(number_histogram_indices):
+    histogram_indexing.append(int(sys.argv[counter()]))
 
-# for now I use only the first phase file, even if there are multiple 040322
+# Check the number of input histograms
+number_histograms = len(data_files)
+if histogram_indexing and len(data_files) == 1:
+    number_histograms = len(histogram_indexing)
+# if histogram_indexing and len(data_files) > 1 should be caught in Validation
+
+# for now, all phases are applied to all histograms
 phases = []
 for i in range(number_phases):
     phases.append(sys.argv[counter()])
@@ -34,8 +44,6 @@ for i in range(number_phases):
 instruments = []
 for i in range(number_instruments):
     instruments.append(sys.argv[counter()])
-
-print('LOOK here:', instruments)
 
 x_min = []
 x_max = []
@@ -77,13 +85,26 @@ else:
     raise ValueError(f'The number of instrument files ({number_instruments}) must be 1 '
                      f'or equal to the number of input histograms {number_histograms}')
 
+# Add histograms with instruments and phases
 gsas_histograms = []
-for histogram_index, input_data_file in enumerate(histograms):
-    gsas_histograms.append(gpx.add_powder_histogram(datafile=os.path.join(data_directory, input_data_file),
-                                                    iparams=os.path.join(data_directory, iparams_input[histogram_index]),
-                                                    databank=1,  # indexing starts at 1
-                                                    phases=gsas_phases
-                                                    ))
+if not histogram_indexing:
+    for data_file_index, input_data_file in enumerate(data_files):
+        gsas_histograms.append(gpx.add_powder_histogram(datafile=os.path.join(data_directory,
+                                                                              input_data_file),
+                                                        iparams=os.path.join(data_directory,
+                                                                             iparams_input[data_file_index]),
+                                                        phases=gsas_phases
+                                                        ))
+else:
+    for index_in_list, histogram_index in enumerate(histogram_indexing):
+        gsas_histograms.append(gpx.add_powder_histogram(datafile=os.path.join(data_directory,
+                                                                              data_files[0]),
+                                                        iparams=os.path.join(data_directory,
+                                                                             iparams_input[index_in_list]),
+                                                        phases=gsas_phases,
+                                                        databank=histogram_index,  # indexing starts at 1
+                                                        ))
+
 if refinement_method == "Pawley":
     for gsas_phase in gsas_phases:
         gsas_phase.data['General']['doPawley'] = True
