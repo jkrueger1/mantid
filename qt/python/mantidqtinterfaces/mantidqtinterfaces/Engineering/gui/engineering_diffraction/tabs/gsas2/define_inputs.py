@@ -1,23 +1,6 @@
 import os
 import time
 
-# _INPUT_WORKSPACE_FILENAME = "ENGINX_280625_focused_bank_1.nxs"
-# _PHASE_FILENAME_1 = "Fe-gamma.cif"
-# _PHASE_FILENAME_2 = "Fe-alpha.cif"
-# _INST_PARAM_FILENAME = "template_ENGINX_241391_236516_North_bank.prm"
-path_to_gsas2 = "/home/danielmurphy/gsas2/"
-save_directory = "/home/danielmurphy/Downloads/GSASdata/new_outputs/"
-data_directory = "/home/danielmurphy/Desktop/GSASMantiddata_030322/"
-refinement_method = "Pawley"
-input_data_files = "ENGINX_305761_307521_all_banks_TOF.gss"  #"ENGINX_305761_307521_bank_1_TOF.gss"  # "ENGINX_280625_focused_bank_1.abc"
-instrument_files = "ENGINX_305738_bank_1.prm"
-phase_file = "7217887.cif"
-# phase_file2 = "Fe-alpha.cif"
-project_name = "mantid_enginx"
-#
-x_min = 0
-x_max = 0
-
 
 '''Inputs Tutorial'''
 # path_to_gsas2 = "/home/danielmurphy/gsas2/"
@@ -33,41 +16,62 @@ x_max = 0
 # x_max = [158.4,153.0]
 
 
+'''Inputs'''
+path_to_gsas2 = "/home/danielmurphy/gsas2/"
+save_directory = "/home/danielmurphy/Downloads/GSASdata/new_outputs/"
+data_directory = "/home/danielmurphy/Desktop/GSASMantiddata_030322/"
+refinement_method = "Pawley"
+input_data_files = ["ENGINX_305761_307521_all_banks_TOF.gss"]  #"ENGINX_305761_307521_bank_1_TOF.gss"  # "ENGINX_280625_focused_bank_1.abc"
+instrument_files = ["ENGINX_305738_bank_1.prm"]
+phase_files = ["7217887.cif"]
+project_name = "mantid_enginx1"
+
+x_min = []
+x_max = []
+
+number_of_inputs = {'histograms': len(input_data_files), 'phases': len(phase_files),
+                    'instruments': len(instrument_files), 'limits': len(x_min)}
+
+
 '''Validation'''
-# if len(input_data_files) != len(instrument_files):
-#     raise ValueError(f"The number of input_data_files (histograms) ({len(input_data_files)}) must equal the"
-#                      + f"number of instrument_files ({len(instrument_files)})")
-#
-# if len(x_min) != len(x_max):
-#     raise ValueError(f"The number of x_min values ({len(x_min)}) must equal the"
-#                      + f"number of x_max values ({len(x_max)})")
-#
-# if len(x_min) != len(input_data_files):
-#     raise ValueError(f"The number of x_min values ({len(x_min)}) must equal the"
-#                      + f"number of input_data_files (histograms) ({len(input_data_files)})")
-#
+if len(x_min) != len(x_max):
+    raise ValueError(f"The number of x_min values ({number_of_inputs['x_min']}) must equal the"
+                     + f"number of x_max values ({number_of_inputs['x_max']})")
+
+if number_of_inputs['limits'] != 0 and number_of_inputs['limits'] != number_of_inputs['histograms']:
+    raise ValueError(f"The number of x_min values ({number_of_inputs['x_min']}) must equal the"
+                     + f"number of input_data_files (histograms) ({number_of_inputs['histograms']}))")
+
 
 '''exec'''
+main_call = (path_to_gsas2 + "bin/python "
+             + "/home/danielmurphy/mantid/qt/python/mantidqtinterfaces/mantidqtinterfaces/Engineering/gui/"
+             + "engineering_diffraction/tabs/gsas2/call_G2sc.py "
+             + path_to_gsas2 + " "
+             + save_directory + " "
+             + data_directory + " "
+             + refinement_method + " "
+             + project_name + " "
+             + str(number_of_inputs['histograms']) + " "
+             + str(number_of_inputs['phases']) + " "
+             + str(number_of_inputs['instruments']) + " "
+             + str(number_of_inputs['limits']) + " ")
+
+for histogram in input_data_files:
+    main_call += (histogram + " ")
+for phase in phase_files:
+    main_call += (phase + " ")
+for instrument in instrument_files:
+    main_call += (instrument + " ")
+
+if x_min and x_max:
+    for value in x_min:
+        main_call += (value + " ")
+    for value in x_max:
+        main_call += (value + " ")
+
 start = time.time()
-os.system(path_to_gsas2 + "bin/python "
-          + "/home/danielmurphy/mantid/qt/python/mantidqtinterfaces/mantidqtinterfaces/Engineering/gui/"
-          + "engineering_diffraction/tabs/gsas2/call_G2sc.py "
-          + path_to_gsas2 + " "
-          + save_directory + " "
-          + data_directory + " "
-          + refinement_method + " "
-          + input_data_files + " "
-          # + input_data_files + " "
-          + instrument_files + " "
-          # + instrument_files[1] + " "
-          + phase_file + " "
-          + project_name + " "
-          + str(x_min) + " "
-          # + str(x_min[1]) + " "
-          + str(x_max) + " "
-          # + str(x_max[1])
-          # + phase_file2
-          )
+os.system(main_call)
 gsas_runtime = time.time() - start
 print(f"\nGSASII Complete in {gsas_runtime} seconds.\n")
 
@@ -75,7 +79,10 @@ print(f"\nGSASII Complete in {gsas_runtime} seconds.\n")
 # project_path = save_directory + project_name + '.gpx'
 result_filepath = save_directory + project_name + '.lst'
 
-last_modified_time = os.path.getmtime(result_filepath)
+try:
+    last_modified_time = os.path.getmtime(result_filepath)
+except FileNotFoundError:
+    raise FileNotFoundError('This GSASII operation must have failed as the output files were not found.')
 
 if time.time() > (last_modified_time + 2):
     # if GSASII result file not modified in the last 2 seconds
@@ -85,7 +92,7 @@ if time.time() > (last_modified_time + 2):
     # Transforming the time object to a timestamp of ISO 8601 format
     T_stamp = time.strftime("%Y-%m-%d %H:%M:%S", t_obj)
     print(f"The file located at the path {result_filepath} was last modified at {T_stamp}")
-    raise ValueError('This GSASII operation failed as output files were from an old operation.')
+    raise ValueError('This GSASII operation must have failed as the output files were from an old operation.')
 
 print(f"GSASII result file found. Opening {result_filepath}")
 with open(result_filepath, 'r') as file:

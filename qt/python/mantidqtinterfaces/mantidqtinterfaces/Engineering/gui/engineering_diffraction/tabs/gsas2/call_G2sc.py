@@ -1,21 +1,51 @@
 import os
 import sys
+count = 0
 
-path_to_gsas2 = sys.argv[1]
-save_directory = sys.argv[2]
-data_directory = sys.argv[3]
-refinement_method = sys.argv[4]
-input_data_file = sys.argv[5]
-# input_data_file_2 = sys.argv[6]
-instrument_file = sys.argv[6]
-# instrument_file_2 = sys.argv[8]
-phase_file = sys.argv[7]
-# phase_files.append(sys.argv[11])
 
-project_name = sys.argv[8]
+def counter():
+    global count
+    count += 1
+    return count
 
-x_min = [float(sys.argv[9])]
-x_max = [float(sys.argv[10])]
+
+path_to_gsas2 = sys.argv[counter()]
+save_directory = sys.argv[counter()]
+data_directory = sys.argv[counter()]
+refinement_method = sys.argv[counter()]
+project_name = sys.argv[counter()]
+
+# number of each dynamic input
+number_histograms = int(sys.argv[counter()])
+number_phases = int(sys.argv[counter()])
+number_instruments = int(sys.argv[counter()])
+number_limits = int(sys.argv[counter()])
+
+
+histograms = []
+for i in range(number_histograms):
+    histograms.append(sys.argv[counter()])
+
+# for now I use only the first phase file, even if there are multiple 040322
+phases = []
+for i in range(number_phases):
+    phases.append(sys.argv[counter()])
+
+# for now I assume there is only one instrument PRM file 040322
+instruments = []
+for i in range(number_instruments):
+    instruments.append(sys.argv[counter()])
+
+print('LOOK here:', instruments)
+
+x_min = []
+x_max = []
+if number_limits != 0:
+    for i in range(number_limits):
+        x_min.append(sys.argv[counter()])
+    for i in range(number_limits):
+        x_max.append(sys.argv[counter()])
+
 
 project_path = save_directory + project_name + '.gpx'
 
@@ -33,19 +63,22 @@ def HistStats(gpx):
     gpx.save()
 
 
-# create a project with a default project name
 gpx = G2sc.G2Project(filename=project_path)
 
-print(os.path.join(data_directory, phase_file), "\n")
-phase = gpx.add_phase(os.path.join(data_directory, phase_file))
+gsas_phases = []
+for phase_file in phases:
+    gsas_phases.append(gpx.add_phase(os.path.join(data_directory, phase_file)))
 
-histogram_1 = gpx.add_powder_histogram(datafile=os.path.join(data_directory, input_data_file),
-                                       iparams=os.path.join(data_directory, instrument_file),
-                                       databank=1,  # indexing starts at 1
-                                       phases=[phase]
-                                       )
-
-phase.data['General']['doPawley'] = True
+gsas_histograms = []
+for input_data_file in histograms:
+    gsas_histograms.append(gpx.add_powder_histogram(datafile=os.path.join(data_directory, input_data_file),
+                                                    iparams=os.path.join(data_directory, instruments[0]),
+                                                    databank=1,  # indexing starts at 1
+                                                    phases=[gsas_phases[0]]
+                                                    ))
+if refinement_method == "Pawley":
+    for gsas_phase in gsas_phases:
+        gsas_phase.data['General']['doPawley'] = True
 # for i in G2sc.dictDive(phase.data['General'], 'paw'): print(i)
 
 # increase # of cycles to improve convergence
@@ -54,9 +87,9 @@ gpx.data['Controls']['data']['max cyc'] = 8  # not in API
 # tutorial step 4: turn on background refinement (Hist)
 refdict0 = {"set": {"Background": {"no. coeffs": 3, "refine": True}}}
 
-# if x_min and x_max:
-#     histogram_1.set_refinements({'Limits': [x_min[0], x_max[0]]})
-#     # histogram_2.set_refinements({'Limits': [x_min[1], x_max[1]]})
+if x_min and x_max:
+    for index, histogram in enumerate(gsas_histograms):
+        histogram.set_refinements({'Limits': [x_min[index], x_max[index]]})
 
 gpx.save(project_path)
 gpx.do_refinements([refdict0])
