@@ -9,14 +9,14 @@ import time
 # refinement_method = "Pawley"
 # input_data_files = ["PBSO4.XRA", "PBSO4.CWN"]
 # instrument_files = ["INST_XRY.PRM","inst_d1a.prm"]
-# phase_file = "PbSO4-Wyckoff.cif"
+# phase_files = ["PbSO4-Wyckoff.cif"]
 # project_name = "mantid_test"
 #
 # x_min = [16.0,19.0]
 # x_max = [158.4,153.0]
 
 
-'''Inputs'''
+'''Inputs Mantid'''
 path_to_gsas2 = "/home/danielmurphy/gsas2/"
 save_directory = "/home/danielmurphy/Downloads/GSASdata/new_outputs/"
 data_directory = "/home/danielmurphy/Desktop/GSASMantiddata_030322/"
@@ -29,6 +29,7 @@ project_name = "mantid_enginx1"
 x_min = []
 x_max = []
 
+'''Matching Dictionary'''
 number_of_inputs = {'histograms': len(input_data_files), 'phases': len(phase_files),
                     'instruments': len(instrument_files), 'limits': len(x_min)}
 
@@ -66,9 +67,9 @@ for instrument in instrument_files:
 
 if x_min and x_max:
     for value in x_min:
-        main_call += (value + " ")
+        main_call += (str(value) + " ")
     for value in x_max:
-        main_call += (value + " ")
+        main_call += (str(value) + " ")
 
 start = time.time()
 os.system(main_call)

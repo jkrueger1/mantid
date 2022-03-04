@@ -31,7 +31,6 @@ phases = []
 for i in range(number_phases):
     phases.append(sys.argv[counter()])
 
-# for now I assume there is only one instrument PRM file 040322
 instruments = []
 for i in range(number_instruments):
     instruments.append(sys.argv[counter()])
@@ -42,9 +41,9 @@ x_min = []
 x_max = []
 if number_limits != 0:
     for i in range(number_limits):
-        x_min.append(sys.argv[counter()])
+        x_min.append(float(sys.argv[counter()]))
     for i in range(number_limits):
-        x_max.append(sys.argv[counter()])
+        x_max.append(float(sys.argv[counter()]))
 
 
 project_path = save_directory + project_name + '.gpx'
@@ -69,10 +68,19 @@ gsas_phases = []
 for phase_file in phases:
     gsas_phases.append(gpx.add_phase(os.path.join(data_directory, phase_file)))
 
+# Assign instruments to histograms
+if number_instruments == 1:
+    iparams_input = [instruments[0]] * number_histograms
+elif number_instruments > 1 and number_instruments == number_histograms:
+    iparams_input = instruments
+else:
+    raise ValueError(f'The number of instrument files ({number_instruments}) must be 1 '
+                     f'or equal to the number of input histograms {number_histograms}')
+
 gsas_histograms = []
-for input_data_file in histograms:
+for histogram_index, input_data_file in enumerate(histograms):
     gsas_histograms.append(gpx.add_powder_histogram(datafile=os.path.join(data_directory, input_data_file),
-                                                    iparams=os.path.join(data_directory, instruments[0]),
+                                                    iparams=os.path.join(data_directory, iparams_input[histogram_index]),
                                                     databank=1,  # indexing starts at 1
                                                     phases=[gsas_phases[0]]
                                                     ))
