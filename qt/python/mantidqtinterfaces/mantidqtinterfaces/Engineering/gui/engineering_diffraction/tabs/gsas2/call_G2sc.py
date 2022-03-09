@@ -122,4 +122,8 @@ if x_min and x_max:
 
 gpx.save(project_path)
 gpx.do_refinements([refdict0])
+gpx.save(project_path)
 HistStats(gpx)
+
+for index, histogram in enumerate(gpx.histograms()):
+    histogram.Export(os.path.join(save_directory, project_name + f"_{index}.csv"), ".csv", "histogram CSV file")

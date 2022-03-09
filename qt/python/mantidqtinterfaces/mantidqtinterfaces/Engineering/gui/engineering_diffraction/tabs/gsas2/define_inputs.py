@@ -1,35 +1,37 @@
 import os
 import time
+import numpy as np
+from mantid.simpleapi import *
 
 
 '''Inputs Tutorial'''
-# path_to_gsas2 = "/home/danielmurphy/gsas2/"
-# save_directory = "/home/danielmurphy/Downloads/GSASdata/new_outputs/"
-# data_directory = "/home/danielmurphy/Downloads/GSASdata/"
-# refinement_method = "Pawley"
-# input_data_files = ["PBSO4.XRA", "PBSO4.CWN"]
-# histogram_indexing = []
-# instrument_files = ["INST_XRY.PRM","inst_d1a.prm"]
-# phase_files = ["PbSO4-Wyckoff.cif"]
-# project_name = "mantid_test"
-#
-# x_min = [16.0,19.0]
-# x_max = [158.4,153.0]
-#
-
-'''Inputs Mantid'''
 path_to_gsas2 = "/home/danielmurphy/gsas2/"
 save_directory = "/home/danielmurphy/Downloads/GSASdata/new_outputs/"
-data_directory = "/home/danielmurphy/Desktop/GSASMantiddata_030322/"
-refinement_method = "Pawley"
-input_data_files = ["ENGINX_305761_307521_all_banks_TOF.gss"]  # ["ENGINX_305761_307521_bank_1_TOF.gss"]
-histogram_indexing = [1]  # assume only indexing when using 1 histogram file
-instrument_files = ["ENGINX_305738_bank_1.prm"]
-phase_files = ["7217887.cif"]
-project_name = "mantid_enginx1"
+data_directory = "/home/danielmurphy/Downloads/GSASdata/"
+refinement_method = "Rietveld"
+input_data_files = ["PBSO4.XRA", "PBSO4.CWN"]
+histogram_indexing = []
+instrument_files = ["INST_XRY.PRM","inst_d1a.prm"]
+phase_files = ["PbSO4-Wyckoff.cif"]
+project_name = "mantid_test"
 
-x_min = []
-x_max = []
+x_min = [16.0,19.0]
+x_max = [158.4,153.0]
+
+
+'''Inputs Mantid'''
+# path_to_gsas2 = "/home/danielmurphy/gsas2/"
+# save_directory = "/home/danielmurphy/Downloads/GSASdata/new_outputs/"
+# data_directory = "/home/danielmurphy/Desktop/GSASMantiddata_030322/"
+# refinement_method = "Pawley"
+# input_data_files = ["ENGINX_305761_307521_all_banks_TOF.gss"]  # ["ENGINX_305761_307521_bank_1_TOF.gss"]
+# histogram_indexing = [1]  # assume only indexing when using 1 histogram file
+# instrument_files = ["ENGINX_305738_bank_1.prm"]
+# phase_files = ["7217887.cif"]
+# project_name = "mantid_enginx1"
+#
+# x_min = []
+# x_max = []
 
 '''Matching Dictionary'''
 number_of_inputs = {'data_files': len(input_data_files), 'histogram_indices': len(histogram_indexing),
@@ -95,9 +97,15 @@ result_filepath = save_directory + project_name + '.lst'
 try:
     last_modified_time = os.path.getmtime(result_filepath)
 except FileNotFoundError:
-    raise FileNotFoundError('This GSASII operation must have failed as the output files were not found.')
+    raise FileNotFoundError('This GSASII operation must have failed as the output .lst file was not found.')
+for index in range(number_histograms):
+    result_csv = save_directory + project_name + f"_{index}.csv"
+    try:
+        last_modified_time_csv = os.path.getmtime(result_csv)
+    except FileNotFoundError:
+        raise FileNotFoundError('This GSASII operation must have failed as the exported histogram .csv file/s was not found.')
 
-if time.time() > (last_modified_time + 2):
+if time.time() > (last_modified_time + 2) or time.time() > (last_modified_time_csv + 2):
     # if GSASII result file not modified in the last 2 seconds
     m_ti = time.ctime(last_modified_time)
     # Using the timestamp string to create a time object/structure
@@ -117,3 +125,16 @@ with open(result_filepath, 'r') as file:
             if where_loop_histogram_wR != -1:
                 where_loop_histogram_wR_end = result_string.find('%', where_loop_histogram_wR)
                 print(loop_histogram, result_string[ where_loop_histogram_wR : where_loop_histogram_wR_end + 1])
+
+
+for index in range(number_histograms):
+    my_data = np.transpose(np.genfromtxt(save_directory + project_name + f"_{index}.csv",
+                                         delimiter=",", skip_header=35))
+    # x  y_obs	weight	y_calc	y_bkg	Q
+    x = np.tile(my_data[0], 2)
+    y = np.array(my_data[1])
+    y_calc = np.array(my_data[3])
+    y_data = np.concatenate((y, y_calc))
+
+    gsas_histogram = CreateWorkspace(DataX=x, DataY=y_data, NSpec=2)
+    plotSpectrum(gsas_histogram, [0, 1])
