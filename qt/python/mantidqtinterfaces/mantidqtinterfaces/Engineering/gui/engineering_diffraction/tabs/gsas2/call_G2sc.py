@@ -95,6 +95,7 @@ if not histogram_indexing:
                                                                              iparams_input[data_file_index]),
                                                         phases=gsas_phases
                                                         ))
+        gsas_histograms[data_file_index].SampleParameters["Scale"] = [1.0, False]
 else:
     for index_in_list, histogram_index in enumerate(histogram_indexing):
         gsas_histograms.append(gpx.add_powder_histogram(datafile=os.path.join(data_directory,
@@ -104,10 +105,16 @@ else:
                                                         phases=gsas_phases,
                                                         databank=histogram_index,  # indexing starts at 1
                                                         ))
+        gsas_histograms[index_in_list].SampleParameters["Scale"] = [1.0, False]
 
+peaks_to_add = set()
 if refinement_method == "Pawley":
     for gsas_phase in gsas_phases:
         gsas_phase.data['General']['doPawley'] = True
+        reflections = G2sc.GenerateReflections('P 1', [5.36230, 5.36230, 5.36230, 90, 90, 90], dmin=1)
+        for reflection in reflections:
+            peaks_to_add.add(reflection[3])
+
 # for i in G2sc.dictDive(phase.data['General'], 'paw'): print(i)
 
 # increase # of cycles to improve convergence
@@ -122,6 +129,27 @@ if x_min and x_max:
 
 gpx.save(project_path)
 gpx.do_refinements([refdict0])
+gpx.save(project_path)
+
+for index, histogram in enumerate(gpx.histograms()):
+    '''Manually add peaks'''
+    peak1 = histogram.add_peak(1, ttheta=38819.06646)  # this is cheeky, I'm using the TOF value in the ttheta input
+    peak2 = histogram.add_peak(1, ttheta=33619.962029999995)
+    peak3 = histogram.add_peak(1, ttheta=23767.413545)
+    peak4 = histogram.add_peak(1, ttheta=20277.14198)
+    peak5 = histogram.add_peak(1, ttheta=19409.27622)
+
+    '''Add Generated reflections as peaks: plots not look reasonable'''
+    # for peak_dspace_value in peaks_to_add:
+    #     histogram.add_peak(1, dspace=peak_dspace_value)
+
+    histogram.set_peakFlags(area=True)
+    histogram.refine_peaks()
+    histogram.set_peakFlags(area=True, pos=True)
+    histogram.refine_peaks()
+    histogram.set_peakFlags(area=True, pos=True, sig=True, gam=True)
+    histogram.refine_peaks()
+
 gpx.save(project_path)
 HistStats(gpx)
 
