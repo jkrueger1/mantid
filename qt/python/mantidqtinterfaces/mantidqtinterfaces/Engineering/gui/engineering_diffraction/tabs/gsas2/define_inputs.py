@@ -2,6 +2,8 @@ import os
 import time
 import numpy as np
 from mantid.simpleapi import *
+from mantid.geometry import CrystalStructure, ReflectionGenerator, ReflectionConditionFilter
+
 TIME_DELAY = 10  # seconds within gsas files must have been generated
 
 '''Inputs Tutorial'''
@@ -27,15 +29,38 @@ refinement_method = "Pawley"
 input_data_files = ["ENGINX_305761_307521_all_banks_TOF.gss"]  # ["ENGINX_305761_307521_bank_1_TOF.gss"]
 histogram_indexing = [1]  # assume only indexing when using 1 histogram file
 instrument_files = ["ENGINX_305738_bank_1.prm"]
-phase_files = ["7217887.cif"]
-project_name = "mantid_enginx6"
+phase_files = ["FE_GAMMA.cif"]  # ["7217887.cif"]
+project_name = "mantid_enginxFEGAMMA"
 
 x_min = [15000.0]
 x_max = [50000.0]
 
+'''Generate Pawley Reflections'''
+
+dmin = 1.0
+# I had to change 3 to -3 in space group
+structure = CrystalStructure("3.65 3.65 3.65", "F m -3 m", "Fe 0.0 0.0 0.0 1.0 0.025")
+generator = ReflectionGenerator(structure)
+
+hkls = generator.getUniqueHKLsUsingFilter(dmin, 3.0, ReflectionConditionFilter.StructureFactor)
+dValues = generator.getDValues(hkls)
+fSquared = generator.getFsSquared(hkls)
+pg = structure.getSpaceGroup().getPointGroup()
+# Make list of tuples and sort by d-values, descending, include point group for multiplicity.
+reflections = sorted([(hkl, d, fsq, len(pg.getEquivalents(hkl))) for hkl, d, fsq in zip(hkls, dValues, fSquared)],
+                                key=lambda x: x[1] - x[0][0]*1e-6, reverse=True)
+# 'HKL', 'd', 'F^2', 'M'
+compressed_reflections = []
+for reflection in reflections:
+    reflection = list(reflection)
+    for index, elem in enumerate(reflection):
+        reflection[index] = str(elem)
+    compressed_reflections.append("#".join(reflection))
+
 '''Matching Dictionary'''
 number_of_inputs = {'data_files': len(input_data_files), 'histogram_indices': len(histogram_indexing),
-                    'phases': len(phase_files), 'instruments': len(instrument_files), 'limits': len(x_min)}
+                    'phases': len(phase_files), 'instruments': len(instrument_files), 'limits': len(x_min),
+                    'Pawley Reflections': len(compressed_reflections)}
 
 
 '''Validation'''
@@ -54,6 +79,9 @@ if histogram_indexing and len(input_data_files) > 1:
     raise ValueError(f"Histogram indexing can is currently only supported, when the "
                      + f"number of input_data_files ({number_of_inputs['histograms']}) == 1")
 
+if not compressed_reflections:
+    raise ValueError(f"No Pawley Reflections were generated for the phases provided. Not calling GSASII.")
+
 
 '''exec'''
 main_call = (path_to_gsas2 + "bin/python "
@@ -68,7 +96,8 @@ main_call = (path_to_gsas2 + "bin/python "
              + str(number_of_inputs['histogram_indices']) + " "
              + str(number_of_inputs['phases']) + " "
              + str(number_of_inputs['instruments']) + " "
-             + str(number_of_inputs['limits']) + " ")
+             + str(number_of_inputs['limits']) + " "
+             + str(number_of_inputs['Pawley Reflections']) + " ")
 
 for input_data_file in input_data_files:
     main_call += (input_data_file + " ")
@@ -84,6 +113,10 @@ if x_min and x_max:
         main_call += (str(value) + " ")
     for value in x_max:
         main_call += (str(value) + " ")
+
+if compressed_reflections:
+    for reflection in compressed_reflections:
+        main_call += (reflection + " ")
 
 start = time.time()
 os.system(main_call)
