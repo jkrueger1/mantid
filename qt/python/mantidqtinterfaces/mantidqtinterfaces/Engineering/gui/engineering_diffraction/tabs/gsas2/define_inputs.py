@@ -30,12 +30,13 @@ input_data_files = ["ENGINX_305761_307521_all_banks_TOF.gss"]  # ["ENGINX_305761
 histogram_indexing = [1]  # assume only indexing when using 1 histogram file
 instrument_files = ["ENGINX_305738_bank_1.prm"]
 phase_files = ["FE_GAMMA.cif"]  # ["7217887.cif"]
-project_name = "mantid_enginxFEGAMMA"
+project_name = "220321script3"
 
-x_min = [15000.0]
+x_min = [18401.18]
 x_max = [50000.0]
 
 user_override_cell_length = 3.65
+microstrain = True
 
 '''Generate Pawley Reflections'''
 dmin = 1.0
@@ -174,7 +175,8 @@ main_call = (path_to_gsas2 + "bin/python "
              + str(number_of_inputs['instruments']) + " "
              + str(number_of_inputs['limits']) + " "
              + str(number_of_inputs['Pawley Reflections']) + " "
-             + str(number_of_inputs['Override Cell Length']) + " ")
+             + str(number_of_inputs['Override Cell Length']) + " "
+             + str(1 if microstrain else 0) + " " )
 
 for input_data_file in input_data_files:
     main_call += (input_data_file + " ")

@@ -25,6 +25,8 @@ number_limits = int(sys.argv[counter()])
 number_reflections = int(sys.argv[counter()])
 number_override_cell_lengths = int(sys.argv[counter()])
 
+microstrain = int(sys.argv[counter()])
+
 data_files = []
 for i in range(number_data_files):
     data_files.append(sys.argv[counter()])
@@ -107,7 +109,7 @@ if not histogram_indexing:
                                                                              iparams_input[data_file_index]),
                                                         phases=gsas_phases
                                                         ))
-        gsas_histograms[data_file_index].SampleParameters["Scale"] = [1.0, False]
+        # gsas_histograms[data_file_index].SampleParameters["Scale"] = [1.0, False]
 else:
     for index_in_list, histogram_index in enumerate(histogram_indexing):
         gsas_histograms.append(gpx.add_powder_histogram(datafile=os.path.join(data_directory,
@@ -117,7 +119,7 @@ else:
                                                         phases=gsas_phases,
                                                         databank=histogram_index,  # indexing starts at 1
                                                         ))
-        gsas_histograms[index_in_list].SampleParameters["Scale"] = [1.0, False]
+        # gsas_histograms[index_in_list].SampleParameters["Scale"] = [1.0, False]
 
 dmin = 1.0
 peaks_to_add = set()
@@ -142,18 +144,15 @@ if refinement_method == "Pawley":
 # for i in G2sc.dictDive(phase.data['General'], 'paw'): print(i)
 
 # increase # of cycles to improve convergence
-gpx.data['Controls']['data']['max cyc'] = 8  # not in API
+gpx.data['Controls']['data']['max cyc'] = 3  # not in API
 
 # tutorial step 4: turn on background refinement (Hist)
 refdict0 = {"set": {"Background": {"no. coeffs": 3, "refine": True}}}
-# refdict0.update({ 'Mustrain': { 'type': 'isotrpoic', 'refine': True}})
 
-
-for p in gpx.phases():
-    p.set_refinements({"Cell": True})
+for gsas_phase in gpx.phases():
+    gsas_phase.set_refinements({"Cell": True})
     if user_override_cell_length:
         gsas_phase.data['General']['Cell'][1:4] = tuple([user_override_cell_length] * 3)
-    print(gsas_phase.data['General']['Cell'])
 
 if x_min and x_max:
     for index, histogram in enumerate(gsas_histograms):
@@ -162,8 +161,16 @@ if x_min and x_max:
 gpx.save(project_path)
 gpx.do_refinements([refdict0])
 gpx.save(project_path)
-
 HistStats(gpx)
+
+if microstrain:
+    for gsas_phase in gpx.phases():
+        gsas_phase.set_HAP_refinements({'Mustrain': { 'type': 'isotropic', 'refine': True}})
+    print("Refining Microstrain")
+
+    gpx.do_refinements([refdict0])
+    gpx.save(project_path)
+    HistStats(gpx)
 
 for index, histogram in enumerate(gpx.histograms()):
     histogram.Export(os.path.join(save_directory, project_name + f"_{index}.csv"), ".csv", "histogram CSV file")
