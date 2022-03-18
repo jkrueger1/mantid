@@ -23,6 +23,7 @@ number_phases = int(sys.argv[counter()])
 number_instruments = int(sys.argv[counter()])
 number_limits = int(sys.argv[counter()])
 number_reflections = int(sys.argv[counter()])
+number_override_cell_lengths = int(sys.argv[counter()])
 
 data_files = []
 for i in range(number_data_files):
@@ -60,6 +61,9 @@ if number_reflections != 0:
     for i in range(number_reflections):
         compressed_reflections.append(sys.argv[counter()])
 
+user_override_cell_length = None
+if number_override_cell_lengths == 1:
+    user_override_cell_length = float(sys.argv[counter()])
 
 '''Call GSASIIscriptable'''
 project_path = save_directory + project_name + '.gpx'
@@ -121,22 +125,13 @@ if refinement_method == "Pawley":
     for gsas_phase in gsas_phases:
         gsas_phase.data['General']['doPawley'] = True
 
-        # cell = gsas_phase.get_cell()
-        # lattice_params = [cell['length_a'], cell['length_b'], cell['length_c'],
-        #                   cell['angle_alpha'], cell['angle_beta'], cell['angle_gamma']]
-        # reflections = G2sc.GenerateReflections(gsas_phase.data['General']['SGData']['SpGrp'],
-        #                                        lattice_params, dmin=dmin)
-        # for gsas_histogram in gsas_histograms:
-        #     out = gsas_histogram.getHKLpeak(dmin, gsas_phase.data['General']['SGData'], lattice_params)
-        #     print(out)
-
-        pawley_reflections = []
+        mantid_pawley_reflections = []
         # 'HKL', 'd', 'F^2', 'M'
         for compressed_reflection in compressed_reflections:
-            pawley_reflections.append(compressed_reflection.split("#"))
+            mantid_pawley_reflections.append(compressed_reflection.split("#"))
 
         gsas_reflections = []
-        for reflection in pawley_reflections:
+        for reflection in mantid_pawley_reflections:
             h, k, l, = reflection[0][1:-1].split(",")
             d, F_sq, multiplicity = reflection[1:]
             gsas_reflections.append([int(h), int(k), int(l), int(multiplicity), float(d), True, 100.0, 1.0])
@@ -153,33 +148,16 @@ gpx.data['Controls']['data']['max cyc'] = 8  # not in API
 refdict0 = {"set": {"Background": {"no. coeffs": 3, "refine": True}}}
 # refdict0.update({ 'Mustrain': { 'type': 'isotrpoic', 'refine': True}})
 
+
 for p in gpx.phases():
     p.set_refinements({"Cell": True})
-    gsas_phase.data['General']['Cell'][1:4] = 3.65, 3.65, 3.65
+    if user_override_cell_length:
+        gsas_phase.data['General']['Cell'][1:4] = tuple([user_override_cell_length] * 3)
     print(gsas_phase.data['General']['Cell'])
 
 if x_min and x_max:
     for index, histogram in enumerate(gsas_histograms):
         histogram.set_refinements({'Limits': [x_min[index], x_max[index]]})
-
-for index, histogram in enumerate(gpx.histograms()):
-    '''Manually add peaks'''
-    # peak1 = histogram.add_peak(1, ttheta=38819.06646)  # this is cheeky, I'm using the TOF value in the ttheta input
-    # peak2 = histogram.add_peak(1, ttheta=33619.962029999995)
-    # peak3 = histogram.add_peak(1, ttheta=23767.413545)
-    # peak4 = histogram.add_peak(1, ttheta=20277.14198)
-    # peak5 = histogram.add_peak(1, ttheta=19409.27622)
-
-    '''Add Generated reflections as peaks: plots not look reasonable'''
-    # for peak_dspace_value in peaks_to_add:
-    #     histogram.add_peak(1, dspace=peak_dspace_value)
-
-    # histogram.set_peakFlags(area=True)
-    # histogram.refine_peaks()
-    # histogram.set_peakFlags(area=True, pos=True)
-    # histogram.refine_peaks()
-    # histogram.set_peakFlags(area=True, pos=True, sig=True, gam=True)
-    # histogram.refine_peaks()
 
 gpx.save(project_path)
 gpx.do_refinements([refdict0])

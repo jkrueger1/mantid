@@ -35,11 +35,85 @@ project_name = "mantid_enginxFEGAMMA"
 x_min = [15000.0]
 x_max = [50000.0]
 
-'''Generate Pawley Reflections'''
+user_override_cell_length = 3.65
 
+'''Generate Pawley Reflections'''
 dmin = 1.0
-# I had to change 3 to -3 in space group
-structure = CrystalStructure("3.65 3.65 3.65", "F m -3 m", "Fe 0.0 0.0 0.0 1.0 0.025")
+
+
+def find_in_file(file_path, marker_string, start_of_value, end_of_value, strip_separator=None):
+    value_string = None
+    with open(file_path, 'r') as file:
+        full_file_string = file.read().replace('\n', '')
+        where_marker = full_file_string.rfind(marker_string)
+        if where_marker != -1:
+            where_value_start = full_file_string.find(start_of_value, where_marker)
+            if where_value_start != -1:
+                where_value_end = full_file_string.find(end_of_value, where_value_start + 1)
+                value_string = full_file_string[where_value_start: where_value_end]
+                if strip_separator:
+                    value_string = value_string.strip(strip_separator + " ")
+                else:
+                    value_string = value_string.strip(" ")
+    return value_string
+
+
+def find_basis_block_in_file(file_path, marker_string, start_of_value, end_of_value):
+
+    with open(file_path, 'r') as file:
+        full_file_string = file.read()
+        where_marker = full_file_string.find(marker_string)
+        value_string = None
+        if where_marker != -1:
+            where_first_digit = -1
+            index = int(where_marker)
+            while index < len(full_file_string):
+                if full_file_string[index].isdecimal():
+                    where_first_digit = index
+                    break
+                index += 1
+            if where_first_digit != -1:
+                where_start_of_line = full_file_string.rfind(start_of_value, 0, where_first_digit-1)
+                if where_start_of_line != -1:
+                    where_end_of_block = full_file_string.find(end_of_value, where_start_of_line)
+                    # if "loop" not found then assume the end of the file is the end of this block
+                    value_string = full_file_string[where_start_of_line: where_end_of_block]
+                    for remove_string in ["Biso", "Uiso"]:
+                        value_string = value_string.replace(remove_string, "")
+    return value_string
+
+
+phase_filepath = os.path.join(data_directory, phase_files[0])
+
+basis = find_basis_block_in_file(phase_filepath, "atom", "\n", "loop")
+split_string_basis = basis.split()
+split_string_basis[0] = ''.join([i for i in split_string_basis[0] if not i.isdigit()])
+if len(split_string_basis[0]) == 2:
+    split_string_basis[0] = ''.join([split_string_basis[0][0].upper(), split_string_basis[0][1].lower()])
+
+basis = " ".join(split_string_basis[0:6]) # assuming only one line in the basis block!!
+print("Basis of Scatterers:\n", "-"*30, "\n", basis, "\n", "-"*30, "\n")
+
+space_group = find_in_file(phase_filepath, "_symmetry_space_group_name_H-M", '"', '"', strip_separator='"')
+# Insert "-" to make the space group work with Mantid
+for index, character in enumerate(space_group):
+    if character.isdigit():
+        split_string = list(space_group)
+        split_string.insert(index, "-")
+        space_group = "".join(split_string)
+print("Space Group: ", space_group)
+
+if user_override_cell_length:
+    cell_lengths = " ".join([str(user_override_cell_length)] * 3)
+else:
+    cell_length_a = find_in_file(phase_filepath, '_cell_length_a', ' ', '_cell_length_b')
+    cell_length_b = find_in_file(phase_filepath, '_cell_length_b', ' ', '_cell_length_c')
+    cell_length_c = find_in_file(phase_filepath, '_cell_length_c', ' ', '_cell')
+    cell_lengths = " ".join([cell_length_a, cell_length_b, cell_length_c])
+print("Cell Lengths:", cell_lengths)
+
+
+structure = CrystalStructure(cell_lengths, space_group, basis)
 generator = ReflectionGenerator(structure)
 
 hkls = generator.getUniqueHKLsUsingFilter(dmin, 3.0, ReflectionConditionFilter.StructureFactor)
@@ -57,10 +131,12 @@ for reflection in reflections:
         reflection[index] = str(elem)
     compressed_reflections.append("#".join(reflection))
 
+
 '''Matching Dictionary'''
 number_of_inputs = {'data_files': len(input_data_files), 'histogram_indices': len(histogram_indexing),
                     'phases': len(phase_files), 'instruments': len(instrument_files), 'limits': len(x_min),
-                    'Pawley Reflections': len(compressed_reflections)}
+                    'Pawley Reflections': len(compressed_reflections),
+                    "Override Cell Length": 1 if user_override_cell_length else 0}
 
 
 '''Validation'''
@@ -97,7 +173,8 @@ main_call = (path_to_gsas2 + "bin/python "
              + str(number_of_inputs['phases']) + " "
              + str(number_of_inputs['instruments']) + " "
              + str(number_of_inputs['limits']) + " "
-             + str(number_of_inputs['Pawley Reflections']) + " ")
+             + str(number_of_inputs['Pawley Reflections']) + " "
+             + str(number_of_inputs['Override Cell Length']) + " ")
 
 for input_data_file in input_data_files:
     main_call += (input_data_file + " ")
@@ -117,6 +194,9 @@ if x_min and x_max:
 if compressed_reflections:
     for reflection in compressed_reflections:
         main_call += (reflection + " ")
+
+if user_override_cell_length:
+    main_call += (str(user_override_cell_length) + " ")
 
 start = time.time()
 os.system(main_call)
