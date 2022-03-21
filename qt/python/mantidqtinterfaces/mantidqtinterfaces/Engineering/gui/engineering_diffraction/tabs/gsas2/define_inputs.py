@@ -41,6 +41,7 @@ refine_sigma_one = True
 refine_gamma = True
 
 refine_histogram_scale_factor = True  # True by default
+open_project_in_gsas = False
 
 '''Generate Pawley Reflections'''
 dmin = 1.0
@@ -260,3 +261,9 @@ for index in range(number_histograms):
 
     gsas_histogram = CreateWorkspace(DataX=x, DataY=y_data, NSpec=2)
     plotSpectrum(gsas_histogram, [0, 1])
+
+# Possible button on EngDiff interface
+if open_project_in_gsas:
+    os.system(path_to_gsas2 + "bin/python "
+              + path_to_gsas2 + "GSASII/GSASII.py "
+              + save_directory + project_name + ".gpx")
