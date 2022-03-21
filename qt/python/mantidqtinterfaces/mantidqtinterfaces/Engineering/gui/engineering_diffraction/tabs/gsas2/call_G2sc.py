@@ -28,6 +28,7 @@ number_override_cell_lengths = int(sys.argv[counter()])
 refine_microstrain = int(sys.argv[counter()])
 refine_sigma_one = int(sys.argv[counter()])
 refine_gamma = int(sys.argv[counter()])
+refine_histogram_scale_factor = int(sys.argv[counter()])
 
 data_files = []
 for i in range(number_data_files):
@@ -111,7 +112,6 @@ if not histogram_indexing:
                                                                              iparams_input[data_file_index]),
                                                         phases=gsas_phases
                                                         ))
-        # gsas_histograms[data_file_index].SampleParameters["Scale"] = [1.0, False]
 else:
     for index_in_list, histogram_index in enumerate(histogram_indexing):
         gsas_histograms.append(gpx.add_powder_histogram(datafile=os.path.join(data_directory,
@@ -121,7 +121,6 @@ else:
                                                         phases=gsas_phases,
                                                         databank=histogram_index,  # indexing starts at 1
                                                         ))
-        # gsas_histograms[index_in_list].SampleParameters["Scale"] = [1.0, False]
 
 dmin = 1.0
 peaks_to_add = set()
@@ -150,6 +149,10 @@ gpx.data['Controls']['data']['max cyc'] = 3  # not in API
 
 # tutorial step 4: turn on background refinement (Hist)
 refdict0 = {"set": {"Background": {"no. coeffs": 3, "refine": True}}}
+
+if not refine_histogram_scale_factor:
+    for gsas_histogram in gpx.histograms():
+        gsas_histogram.SampleParameters["Scale"] = [1.0, False]
 
 for gsas_phase in gpx.phases():
     gsas_phase.set_refinements({"Cell": True})
