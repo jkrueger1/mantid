@@ -36,7 +36,9 @@ x_min = [18401.18]
 x_max = [50000.0]
 
 user_override_cell_length = 3.65
-microstrain = True
+refine_microstrain = False
+refine_sigma_one = False
+refine_gamma = False
 
 '''Generate Pawley Reflections'''
 dmin = 1.0
@@ -176,7 +178,9 @@ main_call = (path_to_gsas2 + "bin/python "
              + str(number_of_inputs['limits']) + " "
              + str(number_of_inputs['Pawley Reflections']) + " "
              + str(number_of_inputs['Override Cell Length']) + " "
-             + str(1 if microstrain else 0) + " " )
+             + str(1 if refine_microstrain else 0) + " "
+             + str(1 if refine_sigma_one else 0) + " "
+             + str(1 if refine_gamma else 0) + " ")
 
 for input_data_file in input_data_files:
     main_call += (input_data_file + " ")

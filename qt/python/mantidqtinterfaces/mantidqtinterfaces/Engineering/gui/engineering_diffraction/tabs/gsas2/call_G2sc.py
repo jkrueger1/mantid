@@ -25,7 +25,9 @@ number_limits = int(sys.argv[counter()])
 number_reflections = int(sys.argv[counter()])
 number_override_cell_lengths = int(sys.argv[counter()])
 
-microstrain = int(sys.argv[counter()])
+refine_microstrain = int(sys.argv[counter()])
+refine_sigma_one = int(sys.argv[counter()])
+refine_gamma = int(sys.argv[counter()])
 
 data_files = []
 for i in range(number_data_files):
@@ -163,11 +165,26 @@ gpx.do_refinements([refdict0])
 gpx.save(project_path)
 HistStats(gpx)
 
-if microstrain:
+if refine_microstrain:
     for gsas_phase in gpx.phases():
         gsas_phase.set_HAP_refinements({'Mustrain': { 'type': 'isotropic', 'refine': True}})
     print("Refining Microstrain")
+    gpx.do_refinements([refdict0])
+    gpx.save(project_path)
+    HistStats(gpx)
 
+if refine_sigma_one:
+    for gsas_histogram in gpx.histograms():
+        gsas_histogram.set_refinements({'Instrument Parameters': ['sig-1']})
+    print("Refining Sigma-1")
+    gpx.do_refinements([refdict0])
+    gpx.save(project_path)
+    HistStats(gpx)
+
+if refine_gamma:
+    for gsas_histogram in gpx.histograms():
+        gsas_histogram.set_refinements({'Instrument Parameters': ['Y']})
+    print("Refining Gamma")
     gpx.do_refinements([refdict0])
     gpx.save(project_path)
     HistStats(gpx)
