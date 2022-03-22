@@ -1,5 +1,6 @@
 import os
 import sys
+import numpy as np
 count = 0
 
 
@@ -194,3 +195,8 @@ if refine_gamma:
 
 for index, histogram in enumerate(gpx.histograms()):
     histogram.Export(os.path.join(save_directory, project_name + f"_{index}.csv"), ".csv", "histogram CSV file")
+
+    # Assuming only one phase
+    phase_name = list(histogram.reflections().keys())[0]
+    reflection_positions = np.transpose(np.array(histogram.reflections()[phase_name]['RefList']))[5]
+    np.savetxt(os.path.join(save_directory, project_name + f"_reflections_{index}.txt"), reflection_positions)

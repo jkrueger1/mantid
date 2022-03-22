@@ -1,6 +1,7 @@
 import os
 import time
 import numpy as np
+import matplotlib.pyplot as plt
 from mantid.simpleapi import *
 from mantid.geometry import CrystalStructure, ReflectionGenerator, ReflectionConditionFilter
 
@@ -250,17 +251,42 @@ with open(result_filepath, 'r') as file:
                 print(loop_histogram, result_string[ where_loop_histogram_wR : where_loop_histogram_wR_end + 1])
 
 
+def chop_to_limits(input_array, xmin, xmax):
+    input_array[x <= xmin] = np.nan
+    input_array[x >= xmax] = np.nan
+    return input_array
+
+
 for index in range(number_histograms):
     result_csv = save_directory + project_name + f"_{index}.csv"
     my_data = np.transpose(np.genfromtxt(result_csv, delimiter=",", skip_header=39))
     # x  y_obs	weight	y_calc	y_bkg	Q
-    x = np.tile(my_data[0], 2)
-    y = np.array(my_data[1])
-    y_calc = np.array(my_data[3])
-    y_data = np.concatenate((y, y_calc))
+    x = my_data[0]
+    y_obs = chop_to_limits(np.array(my_data[1]), x_min[index], x_max[index])
+    y_calc = chop_to_limits(np.array(my_data[3]), x_min[index], x_max[index])
+    y_diff = y_obs - y_calc
+    y_diff -= np.max(np.ma.masked_invalid(y_diff))
+    y_bkg = chop_to_limits(np.array(my_data[4]), x_min[index], x_max[index])
+    y_data = np.concatenate((y_obs, y_calc, y_diff, y_bkg))
 
-    gsas_histogram = CreateWorkspace(DataX=x, DataY=y_data, NSpec=2)
-    plotSpectrum(gsas_histogram, [0, 1])
+    result_reflections_txt = os.path.join(save_directory, project_name + f"_reflections_{index}.txt")
+    reflection_positions = np.loadtxt(result_reflections_txt)
+
+    gsas_histogram = CreateWorkspace(DataX=np.tile(my_data[0], 4), DataY=y_data, NSpec=4)
+
+    fig, axes = plt.subplots(num=project_name + ' GSAS Refinement', subplot_kw={'projection': 'mantid'})
+    axes.plot(gsas_histogram, color='#1105f0', label='observed', linestyle='None', marker='+', wkspIndex=0)
+    axes.plot(gsas_histogram, color='#246b01', label='calculated', wkspIndex=1)
+    axes.plot(gsas_histogram, color='#09acb8', label='difference', wkspIndex=2)
+    axes.plot(gsas_histogram, color='#ff0000', label='background', wkspIndex=3)
+    axes.set_title(project_name + ' GSAS Refinement')
+    _, y_max = axes.get_ylim()
+    axes.plot(reflection_positions, [-0.10*y_max]*len(reflection_positions),
+              color='#1105f0', label='reflections', linestyle='None', marker='|', mew=1.5, ms=8)
+    axes.axvline(x_min[index], color='#246b01', linestyle='--')
+    axes.axvline(x_max[index], color='#a80000', linestyle='--')
+    legend = axes.legend(fontsize=8.0).draggable().legend
+    plt.show()
 
 # Possible button on EngDiff interface
 if open_project_in_gsas:
