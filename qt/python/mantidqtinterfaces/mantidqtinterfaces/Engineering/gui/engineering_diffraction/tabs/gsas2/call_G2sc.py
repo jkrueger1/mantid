@@ -26,6 +26,7 @@ number_limits = int(sys.argv[counter()])
 number_reflections = int(sys.argv[counter()])
 number_override_cell_lengths = int(sys.argv[counter()])
 
+refine_background = int(sys.argv[counter()])
 refine_microstrain = int(sys.argv[counter()])
 refine_sigma_one = int(sys.argv[counter()])
 refine_gamma = int(sys.argv[counter()])
@@ -67,9 +68,12 @@ if number_reflections != 0:
     for i in range(number_reflections):
         compressed_reflections.append(sys.argv[counter()])
 
-user_override_cell_length = None
+user_override_cell_length = []
 if number_override_cell_lengths == 1:
     user_override_cell_length = float(sys.argv[counter()])
+elif number_override_cell_lengths == 3:
+    for cell_length_index in range(3):
+        user_override_cell_length.append(float(sys.argv[counter()]))
 
 '''Call GSASIIscriptable'''
 project_path = save_directory + project_name + '.gpx'
@@ -149,7 +153,11 @@ if refinement_method == "Pawley":
 gpx.data['Controls']['data']['max cyc'] = 3  # not in API
 
 # tutorial step 4: turn on background refinement (Hist)
-refdict0 = {"set": {"Background": {"no. coeffs": 3, "refine": True}}}
+for index, histogram in enumerate(gsas_histograms):
+    if refine_background:
+        histogram.set_refinements({"Background": {"no. coeffs": 3, "refine": True}})
+    else:
+        histogram.set_refinements({"Background": {"no. coeffs": 0, "refine": False}})
 
 if not refine_histogram_scale_factor:
     for gsas_histogram in gpx.histograms():
@@ -158,14 +166,15 @@ if not refine_histogram_scale_factor:
 for gsas_phase in gpx.phases():
     gsas_phase.set_refinements({"Cell": True})
     if user_override_cell_length:
-        gsas_phase.data['General']['Cell'][1:4] = tuple([user_override_cell_length] * 3)
+        gsas_phase.data['General']['Cell'][1:4] = tuple(user_override_cell_length)
 
 if x_min and x_max:
     for index, histogram in enumerate(gsas_histograms):
         histogram.set_refinements({'Limits': [x_min[index], x_max[index]]})
 
+print(user_override_cell_length)
 gpx.save(project_path)
-gpx.do_refinements([refdict0])
+gpx.do_refinements()
 gpx.save(project_path)
 HistStats(gpx)
 
@@ -173,7 +182,7 @@ if refine_microstrain:
     for gsas_phase in gpx.phases():
         gsas_phase.set_HAP_refinements({'Mustrain': { 'type': 'isotropic', 'refine': True}})
     print("Refining Microstrain")
-    gpx.do_refinements([refdict0])
+    gpx.do_refinements()
     gpx.save(project_path)
     HistStats(gpx)
 
@@ -181,7 +190,7 @@ if refine_sigma_one:
     for gsas_histogram in gpx.histograms():
         gsas_histogram.set_refinements({'Instrument Parameters': ['sig-1']})
     print("Refining Sigma-1")
-    gpx.do_refinements([refdict0])
+    gpx.do_refinements()
     gpx.save(project_path)
     HistStats(gpx)
 
@@ -189,7 +198,7 @@ if refine_gamma:
     for gsas_histogram in gpx.histograms():
         gsas_histogram.set_refinements({'Instrument Parameters': ['Y']})
     print("Refining Gamma")
-    gpx.do_refinements([refdict0])
+    gpx.do_refinements()
     gpx.save(project_path)
     HistStats(gpx)
 
@@ -197,6 +206,7 @@ for index, histogram in enumerate(gpx.histograms()):
     histogram.Export(os.path.join(save_directory, project_name + f"_{index}.csv"), ".csv", "histogram CSV file")
 
     # Assuming only one phase
+if refinement_method =='Pawley':
     phase_name = list(histogram.reflections().keys())[0]
     reflection_positions = np.transpose(np.array(histogram.reflections()[phase_name]['RefList']))[5]
     np.savetxt(os.path.join(save_directory, project_name + f"_reflections_{index}.txt"), reflection_positions)
