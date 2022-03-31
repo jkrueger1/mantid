@@ -1,0 +1,60 @@
+# Mantid Repository : https://github.com/mantidproject/mantid
+#
+# Copyright &copy; 2022 ISIS Rutherford Appleton Laboratory UKRI,
+#   NScD Oak Ridge National Laboratory, European Spallation Source,
+#   Institut Laue - Langevin & CSNS, Institute of High Energy Physics, CAS
+# SPDX - License - Identifier: GPL - 3.0 +
+#
+import json
+
+
+class Gsas2Inputs:
+
+    def __init__(self, *, path_to_gsas2, save_directory, data_directory, project_name, refinement_method,
+                 refine_background, refine_microstrain, refine_sigma_one, refine_gamma,
+                 refine_histogram_scale_factor, data_files, histogram_indexing, phase_files,
+                 instrument_files, limits, compressed_reflections, override_cell_lengths):
+        # can I remove this in favour of the matching dictionary??
+        self.path_to_gsas2 = path_to_gsas2
+        self.save_directory = save_directory
+        self.data_directory = data_directory
+        self.project_name = project_name
+        self.refinement_method = refinement_method
+        self.refine_background = refine_background
+        self.refine_microstrain = refine_microstrain
+        self.refine_sigma_one = refine_sigma_one
+        self.refine_gamma = refine_gamma
+        self.refine_histogram_scale_factor = refine_histogram_scale_factor
+        self.data_files = data_files
+        self.histogram_indexing = histogram_indexing
+        self.phase_files = phase_files
+        self.instrument_files = instrument_files
+        self.limits = limits  # x_min and x_max
+        self.compressed_reflections = compressed_reflections  # break out into individual components
+        self.override_cell_lengths = override_cell_lengths
+
+    def matching_dict(self):
+        match_dict = {
+            "path_to_gsas2": self.path_to_gsas2,
+            "save_directory": self.save_directory,
+            "data_directory": self.data_directory,
+            "project_name": self.project_name,
+            "refinement_method": self.refinement_method,
+            "refine_background": self.refine_background,
+            "refine_microstrain": self.refine_microstrain,
+            "refine_sigma_one": self.refine_sigma_one,
+            "refine_gamma": self.refine_gamma,
+            "refine_histogram_scale_factor": self.refine_histogram_scale_factor,
+            "data_files": self.data_files,
+            "histogram_indexing": self.histogram_indexing,
+            "phase_files": self.phase_files,
+            "instrument_files": self.instrument_files,
+            "limits": self.limits,
+            "compressed_reflections": self.compressed_reflections,
+            "override_cell_lengths": self.override_cell_lengths,
+        }
+        return match_dict
+
+
+def convert_Gsas2Inputs_to_json(gsas2_inputs):
+    return json.dumps(gsas2_inputs.matching_dict(), separators=(',', ':'))

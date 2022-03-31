@@ -1,44 +1,34 @@
+# Mantid Repository : https://github.com/mantidproject/mantid
+#
+# Copyright &copy; 2022 ISIS Rutherford Appleton Laboratory UKRI,
+#   NScD Oak Ridge National Laboratory, European Spallation Source,
+#   Institut Laue - Langevin & CSNS, Institute of High Energy Physics, CAS
+# SPDX - License - Identifier: GPL - 3.0 +
 import os
 import sys
+import json
 import numpy as np
-count = 0
-
-
-def counter():
-    global count
-    count += 1
-    return count
 
 
 '''Parse Inputs from Mantid'''
-path_to_gsas2 = sys.argv[counter()]
-save_directory = sys.argv[counter()]
-data_directory = sys.argv[counter()]
-refinement_method = sys.argv[counter()]
-project_name = sys.argv[counter()]
+inputs_json = sys.argv[1]
+inputs_dict = json.loads(inputs_json)
 
-# number of each dynamic input
-number_data_files = int(sys.argv[counter()])
-number_histogram_indices = int(sys.argv[counter()])
-number_phases = int(sys.argv[counter()])
-number_instruments = int(sys.argv[counter()])
-number_limits = int(sys.argv[counter()])
-number_reflections = int(sys.argv[counter()])
-number_override_cell_lengths = int(sys.argv[counter()])
+path_to_gsas2 = inputs_dict['path_to_gsas2']
 
-refine_background = int(sys.argv[counter()])
-refine_microstrain = int(sys.argv[counter()])
-refine_sigma_one = int(sys.argv[counter()])
-refine_gamma = int(sys.argv[counter()])
-refine_histogram_scale_factor = int(sys.argv[counter()])
+save_directory = inputs_dict['save_directory']
+data_directory = inputs_dict['data_directory']
+refinement_method = inputs_dict['refinement_method']
+project_name = inputs_dict['project_name']
 
-data_files = []
-for i in range(number_data_files):
-    data_files.append(sys.argv[counter()])
+refine_background = inputs_dict['refine_background']
+refine_microstrain = inputs_dict['refine_microstrain']
+refine_sigma_one = inputs_dict['refine_sigma_one']
+refine_gamma = inputs_dict['refine_gamma']
+refine_histogram_scale_factor = inputs_dict['refine_histogram_scale_factor']
 
-histogram_indexing = []
-for i in range(number_histogram_indices):
-    histogram_indexing.append(int(sys.argv[counter()]))
+data_files = inputs_dict['data_files']
+histogram_indexing = inputs_dict['histogram_indexing']
 
 # Check the number of input histograms
 number_histograms = len(data_files)
@@ -46,34 +36,12 @@ if histogram_indexing and len(data_files) == 1:
     number_histograms = len(histogram_indexing)
 # if histogram_indexing and len(data_files) > 1 should be caught in Validation
 
-# for now, all phases are applied to all histograms
-phases = []
-for i in range(number_phases):
-    phases.append(sys.argv[counter()])
+phase_files = inputs_dict['phase_files']
+instrument_files = inputs_dict['instrument_files']
+x_min, x_max = inputs_dict['limits']
+compressed_reflections = inputs_dict['compressed_reflections']
+override_cell_lengths = inputs_dict['override_cell_lengths']
 
-instruments = []
-for i in range(number_instruments):
-    instruments.append(sys.argv[counter()])
-
-x_min = []
-x_max = []
-if number_limits != 0:
-    for i in range(number_limits):
-        x_min.append(float(sys.argv[counter()]))
-    for i in range(number_limits):
-        x_max.append(float(sys.argv[counter()]))
-
-compressed_reflections = []
-if number_reflections != 0:
-    for i in range(number_reflections):
-        compressed_reflections.append(sys.argv[counter()])
-
-user_override_cell_length = []
-if number_override_cell_lengths == 1:
-    user_override_cell_length = float(sys.argv[counter()])
-elif number_override_cell_lengths == 3:
-    for cell_length_index in range(3):
-        user_override_cell_length.append(float(sys.argv[counter()]))
 
 '''Call GSASIIscriptable'''
 project_path = save_directory + project_name + '.gpx'
@@ -95,16 +63,16 @@ def HistStats(gpx):
 gpx = G2sc.G2Project(filename=project_path)
 
 gsas_phases = []
-for phase_file in phases:
+for phase_file in phase_files:
     gsas_phases.append(gpx.add_phase(os.path.join(data_directory, phase_file)))
 
 # Assign instruments to histograms
-if number_instruments == 1:
-    iparams_input = [instruments[0]] * number_histograms
-elif number_instruments > 1 and number_instruments == number_histograms:
-    iparams_input = instruments
+if len(instrument_files) == 1:
+    iparams_input = [instrument_files[0]] * number_histograms
+elif len(instrument_files) > 1 and len(instrument_files) == number_histograms:
+    iparams_input = instrument_files
 else:
-    raise ValueError(f'The number of instrument files ({number_instruments}) must be 1 '
+    raise ValueError(f'The number of instrument files ({len(instrument_files)}) must be 1 '
                      f'or equal to the number of input histograms {number_histograms}')
 
 # Add histograms with instruments and phases
@@ -126,7 +94,7 @@ else:
                                                         phases=gsas_phases,
                                                         databank=histogram_index,  # indexing starts at 1
                                                         ))
-
+print('Look Here')
 dmin = 1.0
 peaks_to_add = set()
 if refinement_method == "Pawley":
@@ -165,14 +133,13 @@ if not refine_histogram_scale_factor:
 
 for gsas_phase in gpx.phases():
     gsas_phase.set_refinements({"Cell": True})
-    if user_override_cell_length:
-        gsas_phase.data['General']['Cell'][1:4] = tuple(user_override_cell_length)
+    if override_cell_lengths:
+        gsas_phase.data['General']['Cell'][1:4] = tuple(override_cell_lengths)
 
 if x_min and x_max:
     for index, histogram in enumerate(gsas_histograms):
         histogram.set_refinements({'Limits': [x_min[index], x_max[index]]})
 
-print(user_override_cell_length)
 gpx.save(project_path)
 gpx.do_refinements()
 gpx.save(project_path)
