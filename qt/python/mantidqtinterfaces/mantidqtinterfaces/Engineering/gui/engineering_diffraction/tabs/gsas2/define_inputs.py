@@ -4,63 +4,26 @@
 #   NScD Oak Ridge National Laboratory, European Spallation Source,
 #   Institut Laue - Langevin & CSNS, Institute of High Energy Physics, CAS
 # SPDX - License - Identifier: GPL - 3.0 +
+import os
 import subprocess
 import time
+import datetime
 
 import matplotlib.pyplot as plt
 import numpy as np
 from mantid.geometry import CrystalStructure, ReflectionGenerator, ReflectionConditionFilter
-from mantid.simpleapi import *
+from mantid.simpleapi import CreateWorkspace
 from mantidqtinterfaces.Engineering.gui.engineering_diffraction.tabs.gsas2 import parse_inputs
 
-TIME_DELAY = 10  # seconds within gsas files must have been generated
 
-'''Inputs Tutorial'''
-# path_to_gsas2 = "/home/danielmurphy/gsas2/"
-# save_directory = "/home/danielmurphy/Downloads/GSASdata/new_outputs/"
-# data_directory = "/home/danielmurphy/Downloads/GSASdata/"
-# refinement_method = "Rietveld"
-# data_files = ["PBSO4.XRA", "PBSO4.CWN"]
-# histogram_indexing = []
-# instrument_files = ["INST_XRY.PRM","inst_d1a.prm"]
-# phase_files = ["PbSO4-Wyckoff.cif"]
-# project_name = "mantid_test"
-#
-# x_min = [16.0, 19.0]
-# x_max = [158.4, 153.0]
-#
-# override_cell_lengths = [3.65, 3.65, 3.65] # in presenter force to empty or len3 list of floats
-# refine_background = True
-# refine_microstrain = True
-# refine_sigma_one = False
-# refine_gamma = False
-#
-# refine_histogram_scale_factor = True  # True by default
-
-'''Inputs Mantid'''
-path_to_gsas2 = "/home/danielmurphy/gsas2/"
-save_directory = "/home/danielmurphy/Downloads/GSASdata/new_outputs/"
-data_directory = "/home/danielmurphy/Desktop/GSASMantiddata_030322/"
-refinement_method = "Pawley"
-data_files = ["Save_gss_305761_307521_bank_1_bgsub.gsa"]  # ["ENGINX_305761_307521_all_banks_TOF.gss"]
-histogram_indexing = [1]  # assume only indexing when using 1 histogram file
-instrument_files = ["ENGINX_305738_bank_1.prm"]
-phase_files = ["FE_GAMMA.cif"]  # ["7217887.cif"]
-project_name = "220321script3"
-
-x_min = [18401.18]
-x_max = [50000.0]
-
-override_cell_lengths = [3.65, 3.65, 3.65] # in presenter force to empty or len3 list of floats
-refine_background = True
-refine_microstrain = True
-refine_sigma_one = False
-refine_gamma = False
-
-refine_histogram_scale_factor = True  # True by default
-
-'''Generate Pawley Reflections'''
-dmin = 1.0
+def call_subprocess(command_string):
+    shell_output = subprocess.Popen([command_string.replace('"','\\"')],
+                                    shell=True,
+                                    stdin=None,
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE,
+                                    close_fds=True)
+    return shell_output.communicate()
 
 
 def find_in_file(file_path, marker_string, start_of_value, end_of_value, strip_separator=None):
@@ -81,7 +44,6 @@ def find_in_file(file_path, marker_string, start_of_value, end_of_value, strip_s
 
 
 def find_basis_block_in_file(file_path, marker_string, start_of_value, end_of_value):
-
     with open(file_path, 'r') as file:
         full_file_string = file.read()
         where_marker = full_file_string.find(marker_string)
@@ -105,8 +67,9 @@ def find_basis_block_in_file(file_path, marker_string, start_of_value, end_of_va
     return value_string
 
 
-compressed_reflections = []
-if refinement_method == 'Pawley':
+def read_phase_and_create_reflections(data_directory, phase_files, override_cell_lengths):
+
+    # ASSUMING phase files has only 1 entry
     phase_filepath = os.path.join(data_directory, phase_files[0])
 
     basis = find_basis_block_in_file(phase_filepath, "atom", "\n", "loop")
@@ -149,139 +112,43 @@ if refinement_method == 'Pawley':
     reflections = sorted([(hkl, d, fsq, len(pg.getEquivalents(hkl))) for hkl, d, fsq in zip(hkls, dValues, fSquared)],
                                     key=lambda x: x[1] - x[0][0]*1e-6, reverse=True)
     # 'HKL', 'd', 'F^2', 'M'
-
+    compressed_reflections = []
     for reflection in reflections:
         reflection = list(reflection)
         for index, elem in enumerate(reflection):
             reflection[index] = str(elem)
         compressed_reflections.append("#".join(reflection))
+    return compressed_reflections
 
 
-'''Matching Dictionary'''
-number_of_inputs = {'data_files': len(data_files), 'histogram_indices': len(histogram_indexing),
-                    'phases': len(phase_files), 'instruments': len(instrument_files), 'limits': len(x_min),
-                    'Pawley Reflections': len(compressed_reflections),
-                    "Override Cell Length": len(override_cell_lengths)}
-
-
-'''Validation'''
-if len(x_min) != len(x_max):
-    raise ValueError(f"The number of x_min values ({number_of_inputs['x_min']}) must equal the"
-                     + f"number of x_max values ({number_of_inputs['x_max']})")
-
-number_histograms = len(data_files)
-if histogram_indexing and len(data_files) == 1:
-    number_histograms = len(histogram_indexing)
-if number_of_inputs['limits'] != 0 and number_of_inputs['limits'] != number_histograms:
-    raise ValueError(f"The number of x_min values ({number_of_inputs['x_min']}) must equal the"
-                     + f"number of histograms ({number_histograms}))")
-
-if histogram_indexing and len(data_files) > 1:
-    raise ValueError(f"Histogram indexing can is currently only supported, when the "
-                     + f"number of data_files ({number_of_inputs['histograms']}) == 1")
-
-if refinement_method == 'Pawley' and not compressed_reflections:
-    raise ValueError(f"No Pawley Reflections were generated for the phases provided. Not calling GSASII.")
-
-
-'''exec'''
-
-gsas2_inputs = parse_inputs.Gsas2Inputs(
-    path_to_gsas2=path_to_gsas2,
-    save_directory=save_directory,
-    data_directory=data_directory,
-    project_name=project_name,
-    refinement_method=refinement_method,
-    refine_background=refine_background,
-    refine_microstrain=refine_microstrain,
-    refine_sigma_one=refine_sigma_one,
-    refine_gamma=refine_gamma,
-    refine_histogram_scale_factor=refine_histogram_scale_factor,
-    data_files=data_files,
-    histogram_indexing=histogram_indexing,
-    phase_files=phase_files,
-    instrument_files=instrument_files,
-    limits=[x_min, x_max],
-    compressed_reflections=compressed_reflections,
-    override_cell_lengths=override_cell_lengths
-)
-
-main_call = (path_to_gsas2 + "bin/python "
-             + "/home/danielmurphy/mantid/qt/python/mantidqtinterfaces/mantidqtinterfaces/Engineering/gui/"
-             + "engineering_diffraction/tabs/gsas2/call_G2sc.py "
-             + parse_inputs.convert_Gsas2Inputs_to_json(gsas2_inputs)
-             )
-
-start = time.time()
-
-p = subprocess.Popen(
-        [main_call.replace('"','\\"')],
-        shell=True,
-        stdin=None,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        close_fds=True)
-out, err = p.communicate()
-double_line ="-"*33 + "\n" + "-"*33
-# if err:
-#     print("\n"*5 + double_line + "\n Error from GSAS-II \n" + double_line + "\n" )
-#     raise ValueError(err.decode(), out.decode())
-out = out.decode()
-print("\n"*5 + double_line + "\n Commandline output from GSAS-II \n" + double_line + "\n" + out + double_line + "\n"*5)
-
-gsas_runtime = time.time() - start
-print(f"\nGSASII Complete in {gsas_runtime} seconds.\n")
-
-result_filepath = save_directory + project_name + '.lst'
-try:
-    last_modified_time = os.path.getmtime(result_filepath)
-except FileNotFoundError:
-    raise FileNotFoundError('This GSASII operation must have failed as the output .lst file was not found.')
-for index in range(number_histograms):
-    result_csv = save_directory + project_name + f"_{index}.csv"
-    try:
-        last_modified_time_csv = os.path.getmtime(result_csv)
-    except FileNotFoundError:
-        raise FileNotFoundError('This GSASII operation must have failed as the exported histogram .csv file/s was not found.')
-
-if time.time() > (last_modified_time + TIME_DELAY) or time.time() > (last_modified_time_csv + TIME_DELAY):
-    # if GSASII result file not modified in the last 2 seconds
-    m_ti = time.ctime(last_modified_time)
-    # Using the timestamp string to create a time object/structure
-    t_obj = time.strptime(m_ti)
-    # Transforming the time object to a timestamp of ISO 8601 format
-    T_stamp = time.strftime("%Y-%m-%d %H:%M:%S", t_obj)
-    print(f"The file located at the path {result_filepath} was last modified at {T_stamp}")
-    raise ValueError('This GSASII operation must have failed as the output files were from an old operation.')
-
-print(f"GSASII result file found. Opening {result_filepath}")
-with open(result_filepath, 'r') as file:
-    result_string = file.read().replace('\n', '')
-    for loop_histogram in data_files:
-        where_loop_histogram = result_string.rfind(loop_histogram)
-        if where_loop_histogram != -1:
-            where_loop_histogram_wR = result_string.find('Final refinement wR =', where_loop_histogram)
-            if where_loop_histogram_wR != -1:
-                where_loop_histogram_wR_end = result_string.find('%', where_loop_histogram_wR)
-                print(loop_histogram, result_string[ where_loop_histogram_wR : where_loop_histogram_wR_end + 1])
-
-
-def chop_to_limits(input_array, xmin, xmax):
+def chop_to_limits(input_array, x, xmin, xmax):
     input_array[x <= xmin] = np.nan
     input_array[x >= xmax] = np.nan
     return input_array
 
 
-for index in range(number_histograms): # SPLIT OFF INTO SEPARATE FUNCTION
+def read_gsas_lst_and_print_wR(result_filepath):
+    with open(result_filepath, 'r') as file:
+        result_string = file.read().replace('\n', '')
+        for loop_histogram in data_files:
+            where_loop_histogram = result_string.rfind(loop_histogram)
+            if where_loop_histogram != -1:
+                where_loop_histogram_wR = result_string.find('Final refinement wR =', where_loop_histogram)
+                if where_loop_histogram_wR != -1:
+                    where_loop_histogram_wR_end = result_string.find('%', where_loop_histogram_wR)
+                    print(loop_histogram, result_string[where_loop_histogram_wR: where_loop_histogram_wR_end + 1])
+
+
+def load_and_plot_gsas_histograms(save_directory, project_name, index, x_min, x_max):
     result_csv = save_directory + project_name + f"_{index}.csv"
     my_data = np.transpose(np.genfromtxt(result_csv, delimiter=",", skip_header=39))
     # x  y_obs	weight	y_calc	y_bkg	Q
-    x = my_data[0]
-    y_obs = chop_to_limits(np.array(my_data[1]), x_min[index], x_max[index])
-    y_calc = chop_to_limits(np.array(my_data[3]), x_min[index], x_max[index])
+    x_values = my_data[0]
+    y_obs = chop_to_limits(np.array(my_data[1]), x_values,  x_min[index], x_max[index])
+    y_calc = chop_to_limits(np.array(my_data[3]), x_values, x_min[index], x_max[index])
     y_diff = y_obs - y_calc
     y_diff -= np.max(np.ma.masked_invalid(y_diff))
-    y_bkg = chop_to_limits(np.array(my_data[4]), x_min[index], x_max[index])
+    y_bkg = chop_to_limits(np.array(my_data[4]), x_values, x_min[index], x_max[index])
     y_data = np.concatenate((y_obs, y_calc, y_diff, y_bkg))
 
     result_reflections_txt = os.path.join(save_directory, project_name + f"_reflections_{index}.txt")
@@ -300,16 +167,149 @@ for index in range(number_histograms): # SPLIT OFF INTO SEPARATE FUNCTION
               color='#1105f0', label='reflections', linestyle='None', marker='|', mew=1.5, ms=8)
     axes.axvline(x_min[index], color='#246b01', linestyle='--')
     axes.axvline(x_max[index], color='#a80000', linestyle='--')
-    legend = axes.legend(fontsize=8.0).draggable().legend
+    axes.legend(fontsize=8.0).draggable().legend
     plt.show()
 
 
+'''Inputs Tutorial'''
+# path_to_gsas2 = "/home/danielmurphy/gsas2/"
+# save_directory = "/home/danielmurphy/Downloads/GSASdata/new_outputs/"
+# data_directory = "/home/danielmurphy/Downloads/GSASdata/"
+# refinement_method = "Rietveld"
+# data_files = ["PBSO4.XRA", "PBSO4.CWN"]
+# histogram_indexing = []
+# instrument_files = ["INST_XRY.PRM","inst_d1a.prm"]
+# phase_files = ["PbSO4-Wyckoff.cif"]
+# project_name = "mantid_test"
+#
+# x_min = [16.0, 19.0]
+# x_max = [158.4, 153.0]
+#
+# override_cell_lengths = [3.65, 3.65, 3.65] # in presenter force to empty or len3 list of floats
+# refine_background = True
+# refine_microstrain = True
+# refine_sigma_one = False
+# refine_gamma = False
+#
+# refine_histogram_scale_factor = True  # True by default
+
+'''Inputs Mantid'''
+path_to_gsas2 = "/home/danielmurphy/gsas2/"
+save_directory = "/home/danielmurphy/Downloads/GSASdata/new_outputs/"
+data_directory = "/home/danielmurphy/Desktop/GSASMantiddata_030322/"
+refinement_method = "Pawley"
+data_files = ["Save_gss_305761_307521_bank_1_bgsub.gsa"]  # ["ENGINX_305761_307521_all_banks_TOF.gss"]
+histogram_indexing = [1]  # assume only indexing when using 1 histogram file
+instrument_files = ["ENGINX_305738_bank_1.prm"]
+phase_files = ["FE_GAMMA.cif"]
+project_name = "220321script3"
+
+x_min = [18401.18]
+x_max = [50000.0]
+
+override_cell_lengths = [3.65, 3.65, 3.65] # in presenter force to empty or len3 list of floats
+refine_background = True
+refine_microstrain = True
+refine_sigma_one = False
+refine_gamma = False
+
+refine_histogram_scale_factor = True  # True by default
+
+user_save_directory = os.path.join(save_directory, project_name)
+temporary_save_directory = os.path.join(save_directory,
+                                        datetime.datetime.now().strftime('tmp_EngDiff_GSASII_%Y-%m-%d_%H-%M-%S'))
+make_temporary_save_directory = ("mkdir -p " + temporary_save_directory)
+out_make_temporary_save_directory, err_make_temporary_save_directory = call_subprocess(make_temporary_save_directory)
+
+'''Generate Pawley Reflections'''
+dmin = 1.0
+
+if refinement_method == 'Pawley':
+    compressed_reflections = read_phase_and_create_reflections(data_directory, phase_files, override_cell_lengths)
+
+'''Validation'''
+# if len(x_min) != len(x_max):
+#     raise ValueError(f"The number of x_min values ({number_of_inputs['x_min']}) must equal the"
+#                      + f"number of x_max values ({number_of_inputs['x_max']})")
+#
+number_histograms = len(data_files)
+if histogram_indexing and len(data_files) == 1:
+    number_histograms = len(histogram_indexing)
+# if number_of_inputs['limits'] != 0 and number_of_inputs['limits'] != number_histograms:
+#     raise ValueError(f"The number of x_min values ({number_of_inputs['x_min']}) must equal the"
+#                      + f"number of histograms ({number_histograms}))")
+#
+# if histogram_indexing and len(data_files) > 1:
+#     raise ValueError(f"Histogram indexing can is currently only supported, when the "
+#                      + f"number of data_files ({number_of_inputs['histograms']}) == 1")
+#
+# if refinement_method == 'Pawley' and not compressed_reflections:
+#     raise ValueError(f"No Pawley Reflections were generated for the phases provided. Not calling GSASII.")
+
+
+'''exec'''
+
+gsas2_inputs = parse_inputs.Gsas2Inputs(
+    path_to_gsas2=path_to_gsas2,
+    temporary_save_directory=temporary_save_directory,
+    data_directory=data_directory,
+    project_name=project_name,
+    refinement_method=refinement_method,
+    refine_background=refine_background,
+    refine_microstrain=refine_microstrain,
+    refine_sigma_one=refine_sigma_one,
+    refine_gamma=refine_gamma,
+    refine_histogram_scale_factor=refine_histogram_scale_factor,
+    data_files=data_files,
+    histogram_indexing=histogram_indexing,
+    phase_files=phase_files,
+    instrument_files=instrument_files,
+    limits=[x_min, x_max],
+    compressed_reflections=compressed_reflections,
+    override_cell_lengths=override_cell_lengths
+)
+
+call_gsas2 = (path_to_gsas2 + "bin/python "
+              + "/home/danielmurphy/mantid/qt/python/mantidqtinterfaces/mantidqtinterfaces/Engineering/gui/"
+              + "engineering_diffraction/tabs/gsas2/call_G2sc.py "
+              + parse_inputs.convert_Gsas2Inputs_to_json(gsas2_inputs)
+              )
+
+start = time.time()
+out_call_gsas2, err_call_gsas2 = call_subprocess(call_gsas2)
+
+double_line = "-" * 33 + "\n" + "-" * 33
+# if err_call_gsas2:
+#     print("\n"*5 + double_line + "\n Error from GSAS-II \n" + double_line + "\n" )
+#     raise ValueError(err.decode(), out.decode())
+print("\n"*5 + double_line + "\n Commandline output from GSAS-II \n" + double_line + "\n" + out_call_gsas2.decode() + double_line + "\n"*5)
+
+gsas_runtime = time.time() - start
+print(f"\nGSASII call complete in {gsas_runtime} seconds.\n")
+
+
+result_filename = project_name + '.lst'
+result_filepath = os.path.join(temporary_save_directory, result_filename)
+if result_filename in os.listdir(temporary_save_directory):
+    print(f"GSASII .lst result file found. Opening {result_filepath}")
+read_gsas_lst_and_print_wR(result_filepath)
+
+
+for index in range(number_histograms):
+    load_and_plot_gsas_histograms(save_directory, project_name, index, x_min, x_max)
+
+make_user_save_directory = ("mkdir -p " + user_save_directory)
+out_make_user_save_directory, err_make_user_save_directory = call_subprocess(make_user_save_directory)
+if err_make_user_save_directory:
+    raise ValueError("Could not create the user save directory {user_save_directory}")
+
+if os.listdir(temporary_save_directory): # currently just checking if there is something in the temp save directory
+    for output_file in os.listdir(temporary_save_directory):
+        os.rename(os.path.join(temporary_save_directory, output_file),
+                  os.path.join(user_save_directory, output_file))
+    os.rmdir(temporary_save_directory)
+
+# open GSASII project
 # open_project_call = (path_to_gsas2 + "bin/python " + path_to_gsas2 + "GSASII/GSASII.py "
-#                      + save_directory + project_name + ".gpx")
-# p = subprocess.Popen([open_project_call],
-#                      shell=True,
-#                      stdin=None,
-#                      stdout=subprocess.PIPE,
-#                      stderr=subprocess.PIPE,
-#                      close_fds=True)
-# out, err = p.communicate()
+#                      + os.path.join(user_save_directory, project_name + ".gpx"))
+# out_open_project_call, err_open_project_call = call_subprocess(open_project_call)

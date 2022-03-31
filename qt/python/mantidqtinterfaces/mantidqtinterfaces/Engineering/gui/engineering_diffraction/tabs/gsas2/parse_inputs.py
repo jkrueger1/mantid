@@ -10,13 +10,13 @@ import json
 
 class Gsas2Inputs:
 
-    def __init__(self, *, path_to_gsas2, save_directory, data_directory, project_name, refinement_method,
+    def __init__(self, *, path_to_gsas2, temporary_save_directory, data_directory, project_name, refinement_method,
                  refine_background, refine_microstrain, refine_sigma_one, refine_gamma,
                  refine_histogram_scale_factor, data_files, histogram_indexing, phase_files,
                  instrument_files, limits, compressed_reflections, override_cell_lengths):
         # can I remove this in favour of the matching dictionary??
         self.path_to_gsas2 = path_to_gsas2
-        self.save_directory = save_directory
+        self.temporary_save_directory = temporary_save_directory
         self.data_directory = data_directory
         self.project_name = project_name
         self.refinement_method = refinement_method
@@ -36,7 +36,7 @@ class Gsas2Inputs:
     def matching_dict(self):
         match_dict = {
             "path_to_gsas2": self.path_to_gsas2,
-            "save_directory": self.save_directory,
+            "temporary_save_directory": self.temporary_save_directory,
             "data_directory": self.data_directory,
             "project_name": self.project_name,
             "refinement_method": self.refinement_method,

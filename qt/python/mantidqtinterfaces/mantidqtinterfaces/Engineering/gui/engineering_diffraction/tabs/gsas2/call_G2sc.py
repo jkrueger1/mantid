@@ -15,8 +15,7 @@ inputs_json = sys.argv[1]
 inputs_dict = json.loads(inputs_json)
 
 path_to_gsas2 = inputs_dict['path_to_gsas2']
-
-save_directory = inputs_dict['save_directory']
+temporary_save_directory = inputs_dict['temporary_save_directory']
 data_directory = inputs_dict['data_directory']
 refinement_method = inputs_dict['refinement_method']
 project_name = inputs_dict['project_name']
@@ -44,7 +43,7 @@ override_cell_lengths = inputs_dict['override_cell_lengths']
 
 
 '''Call GSASIIscriptable'''
-project_path = save_directory + project_name + '.gpx'
+project_path = os.path.join(temporary_save_directory, project_name + '.gpx')
 
 sys.path.insert(0, path_to_gsas2 + 'GSASII')
 import GSASIIscriptable as G2sc  # noqa: E402
@@ -94,7 +93,7 @@ else:
                                                         phases=gsas_phases,
                                                         databank=histogram_index,  # indexing starts at 1
                                                         ))
-print('Look Here')
+
 dmin = 1.0
 peaks_to_add = set()
 if refinement_method == "Pawley":
@@ -170,10 +169,10 @@ if refine_gamma:
     HistStats(gpx)
 
 for index, histogram in enumerate(gpx.histograms()):
-    histogram.Export(os.path.join(save_directory, project_name + f"_{index}.csv"), ".csv", "histogram CSV file")
+    histogram.Export(os.path.join(temporary_save_directory, project_name + f"_{index}.csv"), ".csv", "histogram CSV file")
 
     # Assuming only one phase
-if refinement_method =='Pawley':
+if refinement_method == 'Pawley':
     phase_name = list(histogram.reflections().keys())[0]
     reflection_positions = np.transpose(np.array(histogram.reflections()[phase_name]['RefList']))[5]
-    np.savetxt(os.path.join(save_directory, project_name + f"_reflections_{index}.txt"), reflection_positions)
+    np.savetxt(os.path.join(temporary_save_directory, project_name + f"_reflections_{index}.txt"), reflection_positions)
