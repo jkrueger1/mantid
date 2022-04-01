@@ -104,6 +104,7 @@ def read_phase_and_create_reflections(data_directory, phase_files, override_cell
     structure = CrystalStructure(cell_lengths, space_group, basis)
     generator = ReflectionGenerator(structure)
 
+    dmin = 1.0
     hkls = generator.getUniqueHKLsUsingFilter(dmin, 3.0, ReflectionConditionFilter.StructureFactor)
     dValues = generator.getDValues(hkls)
     fSquared = generator.getFsSquared(hkls)
@@ -171,6 +172,11 @@ def load_and_plot_gsas_histograms(save_directory, project_name, index, x_min, x_
     plt.show()
 
 
+def print_shell_output(title, shell_output_string):
+    double_line = "-" * (len(title)+2) + "\n" + "-" * (len(title)+2)
+    print("\n"*3 + double_line + "\n " + title + " \n" + double_line + "\n" + shell_output_string.decode() + double_line + "\n"*3)
+
+
 '''Inputs Tutorial'''
 # path_to_gsas2 = "/home/danielmurphy/gsas2/"
 # save_directory = "/home/danielmurphy/Downloads/GSASdata/new_outputs/"
@@ -213,6 +219,8 @@ refine_microstrain = True
 refine_sigma_one = False
 refine_gamma = False
 
+
+''' Pre exec calculations '''
 refine_histogram_scale_factor = True  # True by default
 
 user_save_directory = os.path.join(save_directory, project_name)
@@ -221,30 +229,25 @@ temporary_save_directory = os.path.join(save_directory,
 make_temporary_save_directory = ("mkdir -p " + temporary_save_directory)
 out_make_temporary_save_directory, err_make_temporary_save_directory = call_subprocess(make_temporary_save_directory)
 
-'''Generate Pawley Reflections'''
-dmin = 1.0
 
 if refinement_method == 'Pawley':
     compressed_reflections = read_phase_and_create_reflections(data_directory, phase_files, override_cell_lengths)
 
+
 '''Validation'''
-# if len(x_min) != len(x_max):
-#     raise ValueError(f"The number of x_min values ({number_of_inputs['x_min']}) must equal the"
-#                      + f"number of x_max values ({number_of_inputs['x_max']})")
-#
 number_histograms = len(data_files)
 if histogram_indexing and len(data_files) == 1:
     number_histograms = len(histogram_indexing)
-# if number_of_inputs['limits'] != 0 and number_of_inputs['limits'] != number_histograms:
-#     raise ValueError(f"The number of x_min values ({number_of_inputs['x_min']}) must equal the"
-#                      + f"number of histograms ({number_histograms}))")
-#
-# if histogram_indexing and len(data_files) > 1:
-#     raise ValueError(f"Histogram indexing can is currently only supported, when the "
-#                      + f"number of data_files ({number_of_inputs['histograms']}) == 1")
-#
-# if refinement_method == 'Pawley' and not compressed_reflections:
-#     raise ValueError(f"No Pawley Reflections were generated for the phases provided. Not calling GSASII.")
+if len(x_min) != 0 and len(x_min) != number_histograms:
+    raise ValueError(f"The number of x_min values ({len(x_min)}) must equal the"
+                     + f"number of histograms ({number_histograms}))")
+
+if histogram_indexing and len(data_files) > 1:
+    raise ValueError(f"Histogram indexing is currently only supported, when the "
+                     + f"number of data_files ({len(data_files)}) == 1")
+
+if refinement_method == 'Pawley' and not compressed_reflections:
+    raise ValueError(f"No Pawley Reflections were generated for the phases provided. Not calling GSASII.")
 
 
 '''exec'''
@@ -277,22 +280,18 @@ call_gsas2 = (path_to_gsas2 + "bin/python "
 
 start = time.time()
 out_call_gsas2, err_call_gsas2 = call_subprocess(call_gsas2)
-
-double_line = "-" * 33 + "\n" + "-" * 33
-# if err_call_gsas2:
-#     print("\n"*5 + double_line + "\n Error from GSAS-II \n" + double_line + "\n" )
-#     raise ValueError(err.decode(), out.decode())
-print("\n"*5 + double_line + "\n Commandline output from GSAS-II \n" + double_line + "\n" + out_call_gsas2.decode() + double_line + "\n"*5)
-
 gsas_runtime = time.time() - start
+print_shell_output(title="Commandline output from GSAS-II", shell_output_string=out_call_gsas2)
 print(f"\nGSASII call complete in {gsas_runtime} seconds.\n")
 
 
-result_filename = project_name + '.lst'
-result_filepath = os.path.join(temporary_save_directory, result_filename)
-if result_filename in os.listdir(temporary_save_directory):
-    print(f"GSASII .lst result file found. Opening {result_filepath}")
-read_gsas_lst_and_print_wR(result_filepath)
+gsas_log_filename = project_name + '.lst'
+gsas_log_filepath = os.path.join(temporary_save_directory, gsas_log_filename)
+if gsas_log_filename not in os.listdir(temporary_save_directory):
+    raise FileNotFoundError()
+
+print(f"GSASII .lst result file found. Opening {gsas_log_filename}")
+read_gsas_lst_and_print_wR(gsas_log_filepath)
 
 
 for index in range(number_histograms):
@@ -308,8 +307,9 @@ if os.listdir(temporary_save_directory): # currently just checking if there is s
         os.rename(os.path.join(temporary_save_directory, output_file),
                   os.path.join(user_save_directory, output_file))
     os.rmdir(temporary_save_directory)
+    print(f"\n\nOutput GSAS-II files saved in {user_save_directory}")
 
-# open GSASII project
+# # open GSASII project
 # open_project_call = (path_to_gsas2 + "bin/python " + path_to_gsas2 + "GSASII/GSASII.py "
 #                      + os.path.join(user_save_directory, project_name + ".gpx"))
 # out_open_project_call, err_open_project_call = call_subprocess(open_project_call)
