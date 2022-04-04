@@ -13,8 +13,7 @@ class Gsas2Inputs:
     def __init__(self, *, path_to_gsas2, temporary_save_directory, data_directory, project_name, refinement_method,
                  refine_background, refine_microstrain, refine_sigma_one, refine_gamma,
                  refine_histogram_scale_factor, data_files, histogram_indexing, phase_files,
-                 instrument_files, limits, compressed_reflections, override_cell_lengths):
-        # can I remove this in favour of the matching dictionary??
+                 instrument_files, limits, mantid_pawley_reflections, override_cell_lengths):
         self.path_to_gsas2 = path_to_gsas2
         self.temporary_save_directory = temporary_save_directory
         self.data_directory = data_directory
@@ -30,7 +29,7 @@ class Gsas2Inputs:
         self.phase_files = phase_files
         self.instrument_files = instrument_files
         self.limits = limits  # x_min and x_max
-        self.compressed_reflections = compressed_reflections  # break out into individual components
+        self.mantid_pawley_reflections = mantid_pawley_reflections
         self.override_cell_lengths = override_cell_lengths
 
     def matching_dict(self):
@@ -50,7 +49,7 @@ class Gsas2Inputs:
             "phase_files": self.phase_files,
             "instrument_files": self.instrument_files,
             "limits": self.limits,
-            "compressed_reflections": self.compressed_reflections,
+            "mantid_pawley_reflections": self.mantid_pawley_reflections,
             "override_cell_lengths": self.override_cell_lengths,
         }
         return match_dict

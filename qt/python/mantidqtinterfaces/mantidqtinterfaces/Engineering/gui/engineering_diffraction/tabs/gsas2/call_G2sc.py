@@ -38,7 +38,7 @@ if histogram_indexing and len(data_files) == 1:
 phase_files = inputs_dict['phase_files']
 instrument_files = inputs_dict['instrument_files']
 x_min, x_max = inputs_dict['limits']
-compressed_reflections = inputs_dict['compressed_reflections']
+mantid_pawley_reflections = inputs_dict['mantid_pawley_reflections']
 override_cell_lengths = inputs_dict['override_cell_lengths']
 
 
@@ -96,21 +96,14 @@ else:
 
 dmin = 1.0
 peaks_to_add = set()
-if refinement_method == "Pawley":
+if refinement_method == "Pawley" and mantid_pawley_reflections:
     for gsas_phase in gsas_phases:
         gsas_phase.data['General']['doPawley'] = True
 
-        mantid_pawley_reflections = []
-        # 'HKL', 'd', 'F^2', 'M'
-        for compressed_reflection in compressed_reflections:
-            mantid_pawley_reflections.append(compressed_reflection.split("#"))
-
         gsas_reflections = []
         for reflection in mantid_pawley_reflections:
-            h, k, l, = reflection[0][1:-1].split(",")
-            d, F_sq, multiplicity = reflection[1:]
+            [h, k, l], d, multiplicity = reflection
             gsas_reflections.append([int(h), int(k), int(l), int(multiplicity), float(d), True, 100.0, 1.0])
-
         gsas_phase.data["Pawley ref"] = gsas_reflections
 
 

@@ -16,6 +16,49 @@ from mantid.simpleapi import CreateWorkspace
 from mantidqtinterfaces.Engineering.gui.engineering_diffraction.tabs.gsas2 import parse_inputs
 
 
+'''Inputs Tutorial'''
+# path_to_gsas2 = "/home/danielmurphy/gsas2/"
+# save_directory = "/home/danielmurphy/Downloads/GSASdata/new_outputs/"
+# data_directory = "/home/danielmurphy/Downloads/GSASdata/"
+# refinement_method = "Rietveld"
+# data_files = ["PBSO4.XRA", "PBSO4.CWN"]
+# histogram_indexing = []
+# instrument_files = ["INST_XRY.PRM","inst_d1a.prm"]
+# phase_files = ["PbSO4-Wyckoff.cif"]
+# project_name = "mantid_test"
+#
+# x_min = [16.0, 19.0]
+# x_max = [158.4, 153.0]
+#
+# override_cell_lengths = [3.65, 3.65, 3.65] # in presenter force to empty or len3 list of floats
+# refine_background = True
+# refine_microstrain = True
+# refine_sigma_one = False
+# refine_gamma = False
+#
+# refine_histogram_scale_factor = True  # True by default
+
+'''Inputs Mantid'''
+path_to_gsas2 = "/home/danielmurphy/gsas2/"
+save_directory = "/home/danielmurphy/Downloads/GSASdata/new_outputs/"
+data_directory = "/home/danielmurphy/Desktop/GSASMantiddata_030322/"
+refinement_method = "Pawley"
+data_files = ["Save_gss_305761_307521_bank_1_bgsub.gsa"]  # ["ENGINX_305761_307521_all_banks_TOF.gss"]
+histogram_indexing = [1]  # assume only indexing when using 1 histogram file
+instrument_files = ["ENGINX_305738_bank_1.prm"]
+phase_files = ["FE_GAMMA.cif"]
+project_name = "220321script3"
+
+x_min = [18401.18]
+x_max = [50000.0]
+
+override_cell_lengths = [3.65, 3.65, 3.65] # in presenter force to empty or len3 list of floats
+refine_background = True
+refine_microstrain = True
+refine_sigma_one = False
+refine_gamma = False
+
+
 def call_subprocess(command_string):
     shell_output = subprocess.Popen([command_string.replace('"','\\"')],
                                     shell=True,
@@ -107,19 +150,12 @@ def read_phase_and_create_reflections(data_directory, phase_files, override_cell
     dmin = 1.0
     hkls = generator.getUniqueHKLsUsingFilter(dmin, 3.0, ReflectionConditionFilter.StructureFactor)
     dValues = generator.getDValues(hkls)
-    fSquared = generator.getFsSquared(hkls)
     pg = structure.getSpaceGroup().getPointGroup()
     # Make list of tuples and sort by d-values, descending, include point group for multiplicity.
-    reflections = sorted([(hkl, d, fsq, len(pg.getEquivalents(hkl))) for hkl, d, fsq in zip(hkls, dValues, fSquared)],
+    reflections = sorted([[list(hkl), d, len(pg.getEquivalents(hkl))] for hkl, d in zip(hkls, dValues)],
                                     key=lambda x: x[1] - x[0][0]*1e-6, reverse=True)
-    # 'HKL', 'd', 'F^2', 'M'
-    compressed_reflections = []
-    for reflection in reflections:
-        reflection = list(reflection)
-        for index, elem in enumerate(reflection):
-            reflection[index] = str(elem)
-        compressed_reflections.append("#".join(reflection))
-    return compressed_reflections
+    print(type([reflections[0][0]]))
+    return reflections
 
 
 def chop_to_limits(input_array, x, xmin, xmax):
@@ -172,52 +208,9 @@ def load_and_plot_gsas_histograms(save_directory, project_name, index, x_min, x_
     plt.show()
 
 
-def print_shell_output(title, shell_output_string):
+def format_shell_output(title, shell_output_string):
     double_line = "-" * (len(title)+2) + "\n" + "-" * (len(title)+2)
-    print("\n"*3 + double_line + "\n " + title + " \n" + double_line + "\n" + shell_output_string.decode() + double_line + "\n"*3)
-
-
-'''Inputs Tutorial'''
-# path_to_gsas2 = "/home/danielmurphy/gsas2/"
-# save_directory = "/home/danielmurphy/Downloads/GSASdata/new_outputs/"
-# data_directory = "/home/danielmurphy/Downloads/GSASdata/"
-# refinement_method = "Rietveld"
-# data_files = ["PBSO4.XRA", "PBSO4.CWN"]
-# histogram_indexing = []
-# instrument_files = ["INST_XRY.PRM","inst_d1a.prm"]
-# phase_files = ["PbSO4-Wyckoff.cif"]
-# project_name = "mantid_test"
-#
-# x_min = [16.0, 19.0]
-# x_max = [158.4, 153.0]
-#
-# override_cell_lengths = [3.65, 3.65, 3.65] # in presenter force to empty or len3 list of floats
-# refine_background = True
-# refine_microstrain = True
-# refine_sigma_one = False
-# refine_gamma = False
-#
-# refine_histogram_scale_factor = True  # True by default
-
-'''Inputs Mantid'''
-path_to_gsas2 = "/home/danielmurphy/gsas2/"
-save_directory = "/home/danielmurphy/Downloads/GSASdata/new_outputs/"
-data_directory = "/home/danielmurphy/Desktop/GSASMantiddata_030322/"
-refinement_method = "Pawley"
-data_files = ["Save_gss_305761_307521_bank_1_bgsub.gsa"]  # ["ENGINX_305761_307521_all_banks_TOF.gss"]
-histogram_indexing = [1]  # assume only indexing when using 1 histogram file
-instrument_files = ["ENGINX_305738_bank_1.prm"]
-phase_files = ["FE_GAMMA.cif"]
-project_name = "220321script3"
-
-x_min = [18401.18]
-x_max = [50000.0]
-
-override_cell_lengths = [3.65, 3.65, 3.65] # in presenter force to empty or len3 list of floats
-refine_background = True
-refine_microstrain = True
-refine_sigma_one = False
-refine_gamma = False
+    return ("\n"*3 + double_line + "\n " + title + " \n" + double_line + "\n" + shell_output_string.decode() + double_line + "\n"*3)
 
 
 ''' Pre exec calculations '''
@@ -229,9 +222,8 @@ temporary_save_directory = os.path.join(save_directory,
 make_temporary_save_directory = ("mkdir -p " + temporary_save_directory)
 out_make_temporary_save_directory, err_make_temporary_save_directory = call_subprocess(make_temporary_save_directory)
 
-
 if refinement_method == 'Pawley':
-    compressed_reflections = read_phase_and_create_reflections(data_directory, phase_files, override_cell_lengths)
+    mantid_pawley_reflections = read_phase_and_create_reflections(data_directory, phase_files, override_cell_lengths)
 
 
 '''Validation'''
@@ -246,7 +238,7 @@ if histogram_indexing and len(data_files) > 1:
     raise ValueError(f"Histogram indexing is currently only supported, when the "
                      + f"number of data_files ({len(data_files)}) == 1")
 
-if refinement_method == 'Pawley' and not compressed_reflections:
+if refinement_method == 'Pawley' and not mantid_pawley_reflections:
     raise ValueError(f"No Pawley Reflections were generated for the phases provided. Not calling GSASII.")
 
 
@@ -268,7 +260,7 @@ gsas2_inputs = parse_inputs.Gsas2Inputs(
     phase_files=phase_files,
     instrument_files=instrument_files,
     limits=[x_min, x_max],
-    compressed_reflections=compressed_reflections,
+    mantid_pawley_reflections=mantid_pawley_reflections,
     override_cell_lengths=override_cell_lengths
 )
 
@@ -281,18 +273,24 @@ call_gsas2 = (path_to_gsas2 + "bin/python "
 start = time.time()
 out_call_gsas2, err_call_gsas2 = call_subprocess(call_gsas2)
 gsas_runtime = time.time() - start
-print_shell_output(title="Commandline output from GSAS-II", shell_output_string=out_call_gsas2)
-print(f"\nGSASII call complete in {gsas_runtime} seconds.\n")
+print(format_shell_output(title="Commandline output from GSAS-II", shell_output_string=out_call_gsas2))
 
+
+gsas_project_filename = project_name + '.gpx'
+gsas_project_filepath = os.path.join(temporary_save_directory, gsas_project_filename)
+if gsas_project_filename not in os.listdir(temporary_save_directory):
+    raise FileNotFoundError("GSAS-II call must have failed, as the output project file was not found.",
+                            format_shell_output(title="Errors from GSAS-II", shell_output_string=err_call_gsas2))
 
 gsas_log_filename = project_name + '.lst'
 gsas_log_filepath = os.path.join(temporary_save_directory, gsas_log_filename)
 if gsas_log_filename not in os.listdir(temporary_save_directory):
-    raise FileNotFoundError()
+    raise FileNotFoundError("GSAS-II call must have failed, as the output log file was not found.",
+                            format_shell_output(title="Errors from GSAS-II", shell_output_string=err_call_gsas2))
 
-print(f"GSASII .lst result file found. Opening {gsas_log_filename}")
+print(f"\nGSAS-II call complete in {gsas_runtime} seconds.\n")
+print(f"GSAS-II .lst result file found. Opening {gsas_log_filename}")
 read_gsas_lst_and_print_wR(gsas_log_filepath)
-
 
 for index in range(number_histograms):
     load_and_plot_gsas_histograms(save_directory, project_name, index, x_min, x_max)
