@@ -35,6 +35,7 @@ from mantidqtinterfaces.Engineering.gui.engineering_diffraction.tabs.gsas2 impor
 # refine_microstrain = True
 # refine_sigma_one = False
 # refine_gamma = False
+# d_spacing_min = 1.0
 #
 # refine_histogram_scale_factor = True  # True by default
 
@@ -57,6 +58,7 @@ refine_background = True
 refine_microstrain = True
 refine_sigma_one = False
 refine_gamma = False
+d_spacing_min = 1.0
 
 
 def call_subprocess(command_string):
@@ -241,6 +243,10 @@ if histogram_indexing and len(data_files) > 1:
 if refinement_method == 'Pawley' and not mantid_pawley_reflections:
     raise ValueError(f"No Pawley Reflections were generated for the phases provided. Not calling GSASII.")
 
+if len(instrument_files) != 1 or len(instrument_files) != number_histograms:
+    raise ValueError(f'The number of instrument files ({len(instrument_files)}) must be 1 '
+                     f'or equal to the number of input histograms {number_histograms}')
+
 
 '''exec'''
 
@@ -261,7 +267,8 @@ gsas2_inputs = parse_inputs.Gsas2Inputs(
     instrument_files=instrument_files,
     limits=[x_min, x_max],
     mantid_pawley_reflections=mantid_pawley_reflections,
-    override_cell_lengths=override_cell_lengths
+    override_cell_lengths=override_cell_lengths,
+    d_spacing_min=d_spacing_min
 )
 
 call_gsas2 = (path_to_gsas2 + "bin/python "

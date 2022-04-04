@@ -10,10 +10,11 @@ import json
 
 class Gsas2Inputs:
 
-    def __init__(self, *, path_to_gsas2, temporary_save_directory, data_directory, project_name, refinement_method,
-                 refine_background, refine_microstrain, refine_sigma_one, refine_gamma,
-                 refine_histogram_scale_factor, data_files, histogram_indexing, phase_files,
-                 instrument_files, limits, mantid_pawley_reflections, override_cell_lengths):
+    def __init__(self, *, path_to_gsas2, temporary_save_directory, data_directory, project_name,
+                 refinement_method, refine_background, refine_microstrain, refine_sigma_one,
+                 refine_gamma, refine_histogram_scale_factor, data_files, histogram_indexing,
+                 phase_files, instrument_files, limits, mantid_pawley_reflections,
+                 override_cell_lengths, d_spacing_min):
         self.path_to_gsas2 = path_to_gsas2
         self.temporary_save_directory = temporary_save_directory
         self.data_directory = data_directory
@@ -31,6 +32,7 @@ class Gsas2Inputs:
         self.limits = limits  # x_min and x_max
         self.mantid_pawley_reflections = mantid_pawley_reflections
         self.override_cell_lengths = override_cell_lengths
+        self.d_spacing_min = d_spacing_min
 
     def matching_dict(self):
         match_dict = {
@@ -51,6 +53,7 @@ class Gsas2Inputs:
             "limits": self.limits,
             "mantid_pawley_reflections": self.mantid_pawley_reflections,
             "override_cell_lengths": self.override_cell_lengths,
+            "d_spacing_min": self.d_spacing_min
         }
         return match_dict
 
