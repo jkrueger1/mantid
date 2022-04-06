@@ -12,7 +12,7 @@ import datetime
 import matplotlib.pyplot as plt
 import numpy as np
 from mantid.geometry import CrystalStructure, ReflectionGenerator, ReflectionConditionFilter
-from mantid.simpleapi import CreateWorkspace
+from mantid.simpleapi import CreateWorkspace, logger
 from mantidqtinterfaces.Engineering.gui.engineering_diffraction.tabs.gsas2 import parse_inputs
 
 
@@ -36,7 +36,7 @@ from mantidqtinterfaces.Engineering.gui.engineering_diffraction.tabs.gsas2 impor
 # refine_sigma_one = False
 # refine_gamma = False
 # d_spacing_min = 1.0
-#
+# refine_unit_cell = True
 # refine_histogram_scale_factor = True  # True by default
 
 '''Inputs Mantid'''
@@ -59,6 +59,7 @@ refine_microstrain = True
 refine_sigma_one = False
 refine_gamma = False
 d_spacing_min = 1.0
+refine_unit_cell = True
 
 
 def call_subprocess(command_string):
@@ -69,6 +70,11 @@ def call_subprocess(command_string):
                                     stderr=subprocess.PIPE,
                                     close_fds=True)
     return shell_output.communicate()
+
+
+def format_shell_output(title, shell_output_string):
+    double_line = "-" * (len(title)+2) + "\n" + "-" * (len(title)+2)
+    return "\n"*3 + double_line + "\n " + title + " \n" + double_line + "\n" + shell_output_string.decode() + double_line + "\n"*3
 
 
 def find_in_file(file_path, marker_string, start_of_value, end_of_value, strip_separator=None):
@@ -118,7 +124,7 @@ def read_basis(phase_file_path):
     split_string_basis[0] = ''.join([i for i in split_string_basis[0] if not i.isdigit()])
     if len(split_string_basis[0]) == 2:
         split_string_basis[0] = ''.join([split_string_basis[0][0].upper(), split_string_basis[0][1].lower()])
-    basis = " ".join(split_string_basis[0:6]) # assuming only one line in the basis block!!
+    basis = " ".join(split_string_basis[0:6])  # assuming only one line in the basis block!!
     return basis
 
 
@@ -156,7 +162,6 @@ def create_pawley_reflections(cell_lengths, space_group, basis, dmin):
     # Make list of tuples and sort by d-values, descending, include point group for multiplicity.
     generated_reflections = sorted([[list(hkl), d, len(pg.getEquivalents(hkl))] for hkl, d in zip(hkls, dValues)],
                                    key=lambda x: x[1] - x[0][0]*1e-6, reverse=True)
-    print(type([generated_reflections[0][0]]))
     return generated_reflections
 
 
@@ -183,7 +188,8 @@ def read_gsas_lst_and_print_wR(result_filepath):
                 where_loop_histogram_wR = result_string.find('Final refinement wR =', where_loop_histogram)
                 if where_loop_histogram_wR != -1:
                     where_loop_histogram_wR_end = result_string.find('%', where_loop_histogram_wR)
-                    print(loop_histogram, result_string[where_loop_histogram_wR: where_loop_histogram_wR_end + 1])
+                    logger.notice(loop_histogram)
+                    logger.notice(result_string[where_loop_histogram_wR: where_loop_histogram_wR_end + 1])
 
 
 def load_gsas_histogram(save_dir, name_of_project, histogram_index, min_x, max_x):
@@ -225,11 +231,6 @@ def plot_gsas_histogram(gsas_histogram, reflection_positions, name_of_project, h
     plt.show()
 
 
-def format_shell_output(title, shell_output_string):
-    double_line = "-" * (len(title)+2) + "\n" + "-" * (len(title)+2)
-    return "\n"*3 + double_line + "\n " + title + " \n" + double_line + "\n" + shell_output_string.decode() + double_line + "\n"*3
-
-
 ''' Pre exec calculations '''
 refine_histogram_scale_factor = True  # True by default
 
@@ -245,7 +246,7 @@ if refinement_method == 'Pawley':
                                                                                            phase_filepath),
                                                           space_group=read_space_group(phase_filepath),
                                                           basis=read_basis(phase_filepath),
-                                                          dmin=1.0)
+                                                          dmin=d_spacing_min)
 
 '''Validation'''
 number_histograms = len(data_files)
@@ -287,31 +288,32 @@ gsas2_inputs = parse_inputs.Gsas2Inputs(
     limits=[x_min, x_max],
     mantid_pawley_reflections=mantid_pawley_reflections,
     override_cell_lengths=override_cell_lengths,
+    refine_unit_cell=refine_unit_cell,
     d_spacing_min=d_spacing_min
 )
 
 call_gsas2 = (path_to_gsas2 + "bin/python "
               + "/home/danielmurphy/mantid/qt/python/mantidqtinterfaces/mantidqtinterfaces/Engineering/gui/"
               + "engineering_diffraction/tabs/gsas2/call_G2sc.py "
-              + parse_inputs.convert_Gsas2Inputs_to_json(gsas2_inputs)
+              + parse_inputs.Gsas2Inputs_to_json(gsas2_inputs)
               )
 
 start = time.time()
 out_call_gsas2, err_call_gsas2 = call_subprocess(call_gsas2)
 gsas_runtime = time.time() - start
-print(format_shell_output(title="Commandline output from GSAS-II", shell_output_string=out_call_gsas2))
+logger.notice(format_shell_output(title="Commandline output from GSAS-II", shell_output_string=out_call_gsas2))
 
 gsas_project_filepath = check_for_output_file(temporary_save_directory, project_name, ".gpx", "project file", err_call_gsas2)
 gsas_result_filepath = check_for_output_file(temporary_save_directory, project_name, ".lst", "result", err_call_gsas2)
-print(f"\nGSAS-II call complete in {gsas_runtime} seconds.\n")
+logger.notice(f"\nGSAS-II call complete in {gsas_runtime} seconds.\n")
 
-print(f"GSAS-II .lst result file found. Opening {project_name}.lst")
+logger.notice(f"GSAS-II .lst result file found. Opening {project_name}.lst")
 read_gsas_lst_and_print_wR(gsas_result_filepath)
 
-for index_in_histograms in range(number_histograms):
-    gsas_histogram_workspace = load_gsas_histogram(save_directory, project_name, index_in_histograms, x_min, x_max)
-    reflections = load_gsas_reflections(save_directory, project_name, index_in_histograms)
-    plot_gsas_histogram(gsas_histogram_workspace, reflections, project_name, index_in_histograms, x_min, x_max)
+for index_histograms in range(number_histograms):
+    gsas_histogram_workspace = load_gsas_histogram(save_directory, project_name, index_histograms, x_min, x_max)
+    reflections = load_gsas_reflections(save_directory, project_name, index_histograms)
+    plot_gsas_histogram(gsas_histogram_workspace, reflections, project_name, index_histograms, x_min, x_max)
 
 make_user_save_directory = ("mkdir -p " + user_save_directory)
 out_make_user_save_directory, err_make_user_save_directory = call_subprocess(make_user_save_directory)
@@ -322,7 +324,7 @@ for output_file in os.listdir(temporary_save_directory):
     os.rename(os.path.join(temporary_save_directory, output_file),
               os.path.join(user_save_directory, output_file))
 os.rmdir(temporary_save_directory)
-print(f"\n\nOutput GSAS-II files saved in {user_save_directory}")
+logger.notice(f"\n\nOutput GSAS-II files saved in {user_save_directory}")
 
 # # open GSAS-II project
 # open_project_call = (path_to_gsas2 + "bin/python " + path_to_gsas2 + "GSASII/GSASII.py "

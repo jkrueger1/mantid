@@ -11,12 +11,11 @@ import numpy as np
 
 
 def print_histogram_R_factors(project):
-    '''prints profile rfactors for all histograms'''
+    """prints profile rfactors for all histograms"""
     print(u"*** Weighted profile R-factor: Rwp " + os.path.split(project.filename)[1])
     for loop_histogram in project.histograms():
         print("\t{:20s}: {:.2f}".format(loop_histogram.name, loop_histogram.get_wR()))
     print("")
-    project.save()
 
 
 def calculate_number_histograms(number_data_files, number_histogram_indices):
@@ -55,13 +54,13 @@ def add_histograms(data_filenames, histogram_indices, project, input_data_direct
                                          )
 
 
-def add_pawley_reflections(pawley_reflections, project):
+def add_pawley_reflections(pawley_reflections, project, d_min):
     for loop_gsas_phase in project.phases():
         loop_gsas_phase.data['General']['doPawley'] = True
         gsas_reflections = []
         for reflection in pawley_reflections:
             [h, k, l], d, multiplicity = reflection
-            gsas_reflections.append([int(h), int(k), int(l), int(multiplicity), float(d), True, 100.0, d_spacing_min])
+            gsas_reflections.append([int(h), int(k), int(l), int(multiplicity), float(d), True, 100.0, d_min])
         loop_gsas_phase.data["Pawley ref"] = gsas_reflections
 
 
@@ -78,6 +77,7 @@ def enable_background(refine, project):
 
 
 def enable_histogram_scale_factor(refine, project):
+    # GSAS-II default is enabled
     if not refine:
         for loop_histogram in project.histograms():
             loop_histogram.SampleParameters["Scale"] = [1.0, False]
@@ -102,7 +102,6 @@ def run_microstrain_refinement(refine, project, path_to_project):
     if refine:
         for loop_phase in project.phases():
             loop_phase.set_HAP_refinements({'Mustrain': {'type': 'isotropic', 'refine': True}})
-        print("Refining Microstrain")
         project.do_refinements()
         project.save(path_to_project)
         print_histogram_R_factors(project)
@@ -118,7 +117,7 @@ def run_parameter_refinement(refine, instrument_parameter_string, project, path_
 
 
 def export_refinement_to_csv(temp_save_directory, name_of_project, project):
-    for histogram_index, loop_histogram in enumerate(gsas_project.histograms()):
+    for histogram_index, loop_histogram in enumerate(project.histograms()):
         loop_histogram.Export(os.path.join(temp_save_directory, name_of_project + f"_{histogram_index}.csv"),
                               ".csv", "histogram CSV file")
 
@@ -146,20 +145,25 @@ refine_microstrain = inputs_dict['refine_microstrain']
 refine_sigma_one = inputs_dict['refine_sigma_one']
 refine_gamma = inputs_dict['refine_gamma']
 refine_histogram_scale_factor = inputs_dict['refine_histogram_scale_factor']
+refine_unit_cell = inputs_dict['refine_unit_cell']
+override_cell_lengths = inputs_dict['override_cell_lengths']
 data_files = inputs_dict['data_files']
 histogram_indexing = inputs_dict['histogram_indexing']
 phase_files = inputs_dict['phase_files']
 instrument_files = inputs_dict['instrument_files']
 limits = inputs_dict['limits']
 mantid_pawley_reflections = inputs_dict['mantid_pawley_reflections']
-override_cell_lengths = inputs_dict['override_cell_lengths']
 d_spacing_min = inputs_dict['d_spacing_min']
 
 
 '''Call GSASIIscriptable'''
 
-sys.path.insert(0, path_to_gsas2 + 'GSASII')
-import GSASIIscriptable as G2sc  # noqa: E402
+try:
+    import_path = path_to_gsas2 + 'GSASII'
+    sys.path.insert(0, import_path)
+    import GSASIIscriptable as G2sc  # noqa: E402
+except ModuleNotFoundError:
+    raise ImportError(f"GSAS-II was not found at {import_path}")
 
 
 project_path = os.path.join(temporary_save_directory, project_name + '.gpx')
@@ -173,13 +177,12 @@ assigned_instruments = assign_instruments_to_histograms(instrument_files, number
 add_histograms(data_files, histogram_indexing, gsas_project, data_directory, assigned_instruments)
 
 if refinement_method == "Pawley" and mantid_pawley_reflections:
-    add_pawley_reflections(mantid_pawley_reflections, gsas_project)
+    add_pawley_reflections(mantid_pawley_reflections, gsas_project, d_spacing_min)
 
 set_max_number_cycles(3)
 enable_background(refine_background, gsas_project)
 enable_histogram_scale_factor(refine_histogram_scale_factor, gsas_project)
 
-refine_unit_cell = True
 enable_unit_cell(refine_unit_cell, override_cell_lengths, gsas_project)
 enable_limits(limits, gsas_project)
 
