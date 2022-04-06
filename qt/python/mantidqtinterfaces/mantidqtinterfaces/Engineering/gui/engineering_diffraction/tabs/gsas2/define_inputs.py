@@ -68,18 +68,19 @@ def call_subprocess(command_string):
                                     stdin=None,
                                     stdout=subprocess.PIPE,
                                     stderr=subprocess.PIPE,
-                                    close_fds=True)
+                                    close_fds=True,
+                                    universal_newlines=True)
     return shell_output.communicate()
 
 
 def format_shell_output(title, shell_output_string):
     double_line = "-" * (len(title)+2) + "\n" + "-" * (len(title)+2)
-    return "\n"*3 + double_line + "\n " + title + " \n" + double_line + "\n" + shell_output_string.decode() + double_line + "\n"*3
+    return "\n"*3 + double_line + "\n " + title + " \n" + double_line + "\n" + shell_output_string + double_line + "\n"*3
 
 
 def find_in_file(file_path, marker_string, start_of_value, end_of_value, strip_separator=None):
     value_string = None
-    with open(file_path, 'r') as file:
+    with open(file_path, 'rt', encoding='utf-8') as file:
         full_file_string = file.read().replace('\n', '')
         where_marker = full_file_string.rfind(marker_string)
         if where_marker != -1:
@@ -95,7 +96,7 @@ def find_in_file(file_path, marker_string, start_of_value, end_of_value, strip_s
 
 
 def find_basis_block_in_file(file_path, marker_string, start_of_value, end_of_value):
-    with open(file_path, 'r') as file:
+    with open(file_path, 'rt', encoding='utf-8') as file:
         full_file_string = file.read()
         where_marker = full_file_string.find(marker_string)
         value_string = None
@@ -180,7 +181,7 @@ def chop_to_limits(input_array, x, min_x, max_x):
 
 
 def read_gsas_lst_and_print_wR(result_filepath):
-    with open(result_filepath, 'r') as file:
+    with open(result_filepath, 'rt', encoding='utf-8') as file:
         result_string = file.read().replace('\n', '')
         for loop_histogram in data_files:
             where_loop_histogram = result_string.rfind(loop_histogram)
@@ -192,8 +193,8 @@ def read_gsas_lst_and_print_wR(result_filepath):
                     logger.notice(result_string[where_loop_histogram_wR: where_loop_histogram_wR_end + 1])
 
 
-def load_gsas_histogram(save_dir, name_of_project, histogram_index, min_x, max_x):
-    result_csv = save_dir + name_of_project + f"_{histogram_index}.csv"
+def load_gsas_histogram(temp_save_directory, name_of_project, histogram_index, min_x, max_x):
+    result_csv = os.path.join(temp_save_directory, name_of_project + f"_{histogram_index}.csv")
     my_data = np.transpose(np.genfromtxt(result_csv, delimiter=",", skip_header=39))
     # x  y_obs	weight	y_calc	y_bkg	Q
     x_values = my_data[0]
@@ -209,8 +210,8 @@ def load_gsas_histogram(save_dir, name_of_project, histogram_index, min_x, max_x
     return gsas_histogram
 
 
-def load_gsas_reflections(save_dir, name_of_project, histogram_index):
-    result_reflections_txt = os.path.join(save_dir, name_of_project + f"_reflections_{histogram_index}.txt")
+def load_gsas_reflections(temp_save_directory, name_of_project, histogram_index):
+    result_reflections_txt = os.path.join(temp_save_directory, name_of_project + f"_reflections_{histogram_index}_Fe_gamma.txt")
     return np.loadtxt(result_reflections_txt)
 
 
@@ -311,8 +312,8 @@ logger.notice(f"GSAS-II .lst result file found. Opening {project_name}.lst")
 read_gsas_lst_and_print_wR(gsas_result_filepath)
 
 for index_histograms in range(number_histograms):
-    gsas_histogram_workspace = load_gsas_histogram(save_directory, project_name, index_histograms, x_min, x_max)
-    reflections = load_gsas_reflections(save_directory, project_name, index_histograms)
+    gsas_histogram_workspace = load_gsas_histogram(temporary_save_directory, project_name, index_histograms, x_min, x_max)
+    reflections = load_gsas_reflections(temporary_save_directory, project_name, index_histograms)
     plot_gsas_histogram(gsas_histogram_workspace, reflections, project_name, index_histograms, x_min, x_max)
 
 make_user_save_directory = ("mkdir -p " + user_save_directory)

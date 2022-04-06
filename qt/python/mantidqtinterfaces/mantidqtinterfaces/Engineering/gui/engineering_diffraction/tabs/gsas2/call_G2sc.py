@@ -7,7 +7,6 @@
 import os
 import sys
 import json
-import numpy as np
 
 
 def print_histogram_R_factors(project):
@@ -123,13 +122,14 @@ def export_refinement_to_csv(temp_save_directory, name_of_project, project):
 
 
 def export_reflections(temp_save_directory, name_of_project, project):
-    for histogram_index, loop_histogram in project.histograms():
-        phase_names = list(loop_histogram.reflections().keys())[0]
+    for histogram_index, loop_histogram in enumerate(project.histograms()):
+        phase_names = [list(loop_histogram.reflections().keys())[0]]
         for phase_name in phase_names:
-            reflection_positions = np.transpose(np.array(loop_histogram.reflections()[phase_name]['RefList']))[5]
-            np.savetxt(os.path.join(temp_save_directory,
-                                    name_of_project + f"_reflections_{histogram_index}_{phase_name}.txt"),
-                       reflection_positions)
+            reflection_positions = loop_histogram.reflections()[phase_name]['RefList'][:, 5]
+            with open(os.path.join(temp_save_directory,
+                                   name_of_project + f"_reflections_{histogram_index}_{phase_name}.txt"),
+                      'wt', encoding='utf-8') as file:
+                file.write(reflection_positions)
 
 
 '''Parse Inputs from Mantid'''
@@ -196,5 +196,5 @@ run_parameter_refinement(refine_sigma_one, 'sig-1', gsas_project, project_path)
 run_parameter_refinement(refine_gamma, 'Y', gsas_project, project_path)
 
 export_refinement_to_csv(temporary_save_directory, project_name, gsas_project)
-if refinement_method == 'Pawley':
+if refinement_method == "Pawley":
     export_reflections(temporary_save_directory, project_name, gsas_project)
