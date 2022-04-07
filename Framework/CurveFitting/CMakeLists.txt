@@ -31,8 +31,6 @@ set(SRC_FILES
     src/Algorithms/VesuvioCalculateGammaBackground.cpp
     src/Algorithms/VesuvioCalculateMS.cpp
     src/AugmentedLagrangianOptimizer.cpp
-    src/ComplexMatrix.cpp
-    src/ComplexVector.cpp
     src/Constraints/BoundaryConstraint.cpp
     src/CostFunctions/CostFuncFitting.cpp
     src/CostFunctions/CostFuncLeastSquares.cpp
@@ -161,8 +159,6 @@ set(SRC_FILES
     src/Functions/Voigt.cpp
     src/Functions/ConvTempCorrection.cpp
     src/GSLFunctions.cpp
-    src/GSLMatrix.cpp
-    src/GSLVector.cpp
     src/GeneralDomainCreator.cpp
     src/HistogramDomainCreator.cpp
     src/IFittingAlgorithm.cpp
@@ -217,29 +213,24 @@ set(INC_FILES
     inc/MantidCurveFitting/Algorithms/VesuvioCalculateGammaBackground.h
     inc/MantidCurveFitting/Algorithms/VesuvioCalculateMS.h
     inc/MantidCurveFitting/AugmentedLagrangianOptimizer.h
-    inc/MantidCurveFitting/ComplexMatrix.h
-    inc/MantidCurveFitting/ComplexVector.h
     inc/MantidCurveFitting/Constraints/BoundaryConstraint.h
     inc/MantidCurveFitting/CostFunctions/CostFuncFitting.h
     inc/MantidCurveFitting/CostFunctions/CostFuncLeastSquares.h
     inc/MantidCurveFitting/CostFunctions/CostFuncRwp.h
     inc/MantidCurveFitting/CostFunctions/CostFuncUnweightedLeastSquares.h
     inc/MantidCurveFitting/CostFunctions/CostFuncPoisson.h
-    inc/EigenComplexMatrix.h
-    inc/EigenComplexVector.h
-    inc/EigenFortranDefs.h
-    inc/EigenFortranMatrix.h
-    inc/EigenFortranVector.h
-    inc/EigenJacobian.h
-    inc/EigenMatrix.h
-    inc/EigenMatrixView.h
-    inc/EigenVector.h
-    inc/EigenVectorView.h
+    inc/MantidCurveFitting/EigenComplexMatrix.h
+    inc/MantidCurveFitting/EigenComplexVector.h
+    inc/MantidCurveFitting/EigenFortranDefs.h
+    inc/MantidCurveFitting/EigenFortranMatrix.h
+    inc/MantidCurveFitting/EigenFortranVector.h
+    inc/MantidCurveFitting/EigenJacobian.h
+    inc/MantidCurveFitting/EigenMatrix.h
+    inc/MantidCurveFitting/EigenMatrixView.h
+    inc/MantidCurveFitting/EigenVector.h
+    inc/MantidCurveFitting/EigenVectorView.h
     inc/MantidCurveFitting/ExcludeRangeFinder.h
     inc/MantidCurveFitting/FitMW.h
-    inc/MantidCurveFitting/FortranDefs.h
-    inc/MantidCurveFitting/FortranMatrix.h
-    inc/MantidCurveFitting/FortranVector.h
     inc/MantidCurveFitting/FuncMinimizers/BFGS_Minimizer.h
     inc/MantidCurveFitting/FuncMinimizers/DampedGaussNewtonMinimizer.h
     inc/MantidCurveFitting/FuncMinimizers/DerivMinimizer.h
@@ -349,9 +340,6 @@ set(INC_FILES
     inc/MantidCurveFitting/Functions/Voigt.h
     inc/MantidCurveFitting/Functions/ConvTempCorrection.h
     inc/MantidCurveFitting/GSLFunctions.h
-    inc/MantidCurveFitting/GSLJacobian.h
-    inc/MantidCurveFitting/GSLMatrix.h
-    inc/MantidCurveFitting/GSLVector.h
     inc/MantidCurveFitting/GeneralDomainCreator.h
     inc/MantidCurveFitting/HalfComplex.h
     inc/MantidCurveFitting/HistogramDomainCreator.h
@@ -403,8 +391,6 @@ set(TEST_FILES
     Algorithms/VesuvioCalculateGammaBackgroundTest.h
     Algorithms/VesuvioCalculateMSTest.h
     AugmentedLagrangianOptimizerTest.h
-    ComplexMatrixTest.h
-    ComplexVectorTest.h
     CompositeFunctionTest.h
     Constraints/BoundaryConstraintTest.h
     CostFunctions/CostFuncFittingTest.h
@@ -419,8 +405,6 @@ set(TEST_FILES
     EigenVectorTest.h
     EigenViewTest.h
     FitMWTest.h
-    FortranMatrixTest.h
-    FortranVectorTest.h
     FuncMinimizers/BFGSTest.h
     FuncMinimizers/DampedGaussNewtonMinimizerTest.h
     FuncMinimizers/ErrorMessagesTest.h
@@ -523,8 +507,6 @@ set(TEST_FILES
     Functions/VesuvioResolutionTest.h
     Functions/VoigtTest.h
     Functions/ConvTempCorrectionTest.h
-    GSLMatrixTest.h
-    GSLVectorTest.h
     GeneralDomainCreatorTest.h
     GramCharlierTest.h
     HistogramDomainCreatorTest.h
