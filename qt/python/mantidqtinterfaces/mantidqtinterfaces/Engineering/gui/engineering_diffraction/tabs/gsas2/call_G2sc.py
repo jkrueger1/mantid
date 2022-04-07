@@ -126,10 +126,11 @@ def export_reflections(temp_save_directory, name_of_project, project):
         phase_names = [list(loop_histogram.reflections().keys())[0]]
         for phase_name in phase_names:
             reflection_positions = loop_histogram.reflections()[phase_name]['RefList'][:, 5]
-            with open(os.path.join(temp_save_directory,
-                                   name_of_project + f"_reflections_{histogram_index}_{phase_name}.txt"),
-                      'wt', encoding='utf-8') as file:
-                file.write(reflection_positions)
+            reflection_file_path = os.path.join(temp_save_directory,
+                                                name_of_project + f"_reflections_{histogram_index}_{phase_name}.txt")
+            with open(reflection_file_path, 'wt', encoding='utf-8') as file:
+                for reflection in reflection_positions:
+                    file.write(f"{str(reflection)}\n")
 
 
 '''Parse Inputs from Mantid'''
@@ -164,7 +165,6 @@ try:
     import GSASIIscriptable as G2sc  # noqa: E402
 except ModuleNotFoundError:
     raise ImportError(f"GSAS-II was not found at {import_path}")
-
 
 project_path = os.path.join(temporary_save_directory, project_name + '.gpx')
 gsas_project = G2sc.G2Project(filename=project_path)

@@ -95,6 +95,26 @@ def find_in_file(file_path, marker_string, start_of_value, end_of_value, strip_s
     return value_string
 
 
+def find_phase_names_in_lst(file_path):
+    phase_names = []
+    marker_string = "Phase name"
+    start_of_value = ":"
+    end_of_value = "="
+    strip_separator=":"
+    with open(file_path, 'rt', encoding='utf-8') as file:
+        full_file_string = file.read().replace('\n', '')
+        where_marker = full_file_string.find(marker_string)
+        while where_marker != -1:
+            where_value_start = full_file_string.find(start_of_value, where_marker)
+            if where_value_start != -1:
+                where_value_end = full_file_string.find(end_of_value, where_value_start + 1)
+                phase_names.append(full_file_string[where_value_start: where_value_end].strip(strip_separator + " "))
+                where_marker = full_file_string.find(marker_string, where_value_end)
+            else:
+                where_marker = -1
+    return phase_names
+
+
 def find_basis_block_in_file(file_path, marker_string, start_of_value, end_of_value):
     with open(file_path, 'rt', encoding='utf-8') as file:
         full_file_string = file.read()
@@ -210,9 +230,12 @@ def load_gsas_histogram(temp_save_directory, name_of_project, histogram_index, m
     return gsas_histogram
 
 
-def load_gsas_reflections(temp_save_directory, name_of_project, histogram_index):
-    result_reflections_txt = os.path.join(temp_save_directory, name_of_project + f"_reflections_{histogram_index}_Fe_gamma.txt")
-    return np.loadtxt(result_reflections_txt)
+def load_gsas_reflections(temp_save_directory, name_of_project, histogram_index, phase_names):
+    loaded_reflections = []
+    for phase_name in phase_names:
+        result_reflections_txt = os.path.join(temp_save_directory, name_of_project + f"_reflections_{histogram_index}_{phase_name}.txt")
+        loaded_reflections.append(np.loadtxt(result_reflections_txt))
+    return loaded_reflections
 
 
 def plot_gsas_histogram(gsas_histogram, reflection_positions, name_of_project, histogram_index, min_x, max_x):
@@ -313,7 +336,8 @@ read_gsas_lst_and_print_wR(gsas_result_filepath)
 
 for index_histograms in range(number_histograms):
     gsas_histogram_workspace = load_gsas_histogram(temporary_save_directory, project_name, index_histograms, x_min, x_max)
-    reflections = load_gsas_reflections(temporary_save_directory, project_name, index_histograms)
+    phase_names_list = find_phase_names_in_lst(os.path.join(temporary_save_directory, project_name + ".lst"))
+    reflections = load_gsas_reflections(temporary_save_directory, project_name, index_histograms, phase_names_list)
     plot_gsas_histogram(gsas_histogram_workspace, reflections, project_name, index_histograms, x_min, x_max)
 
 make_user_save_directory = ("mkdir -p " + user_save_directory)
