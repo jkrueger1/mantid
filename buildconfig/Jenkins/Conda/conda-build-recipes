@@ -20,6 +20,8 @@
 #   --build-mantid: build the mantid package using conda-build
 #   --build-qt: build the qt package using conda-build (this will implicitly build mantid)
 #   --build-workbench: build the workbench package using conda-build (this will implicitly build qt and mantid)
+#   --build-bundle: Build all other packages, and then use them to create a bundle that can be used outside of a conda environment (Windows and MacOS only)
+#   --nightly: Build a nightly version of the package
 #
 # Possible parameters:
 #   --clobber-yml: clobber the meta yaml files of each package build with conda-build, provide an absolute path to the uteyml file
@@ -59,6 +61,7 @@ SCRIPT_DIR=$WORKSPACE/buildconfig/Jenkins/Conda/
 ENABLE_BUILD_MANTID=false
 ENABLE_BUILD_QT=false
 ENABLE_BUILD_WORKBENCH=false
+BUILD_NIGHTLY=false
 RECIPES_TAG=main
 
 # Handle flag inputs
@@ -68,6 +71,8 @@ do
         --build-mantid) ENABLE_BUILD_MANTID=true ;;
         --build-qt) ENABLE_BUILD_QT=true ;;
         --build-workbench) ENABLE_BUILD_WORKBENCH=true ;;
+        --build-bundle) ENABLE_BUILD_BUNDLE=true ;;
+        --nightly) BUILD_NIGHTLY=true ;;
         --clobber-yml)
             CLOBBER_FILE="--clobber-file $2"
             shift ;;
@@ -92,6 +97,21 @@ if [[ $ENABLE_WORKBENCH  == true ]]; then
     ENABLE_BUILD_QT=true
 fi
 
+if [[ $ENABLE_BUILD_BUNDLE  == true ]]; then
+    if [[ $OSTYPE == "msys"* ]]; then
+        ENABLE_BUILD_MANTID=true
+        ENABLE_BUILD_QT=true
+        ENABLE_WORKBENCH=true
+    elif [[ $OSTYPE == 'darwin'* ]]; then
+        ENABLE_BUILD_MANTID=true
+        ENABLE_BUILD_QT=true
+        ENABLE_WORKBENCH=true
+    else
+        echo "Linux bundling is not currently supported please use conda instead"
+        exit 1
+    fi
+fi
+
 # Setup Mambaforge
 $SCRIPT_DIR/download-and-install-mambaforge $EXPECTED_MAMBAFORGE_PATH $EXPECTED_CONDA_PATH true
 
@@ -100,6 +120,13 @@ $EXPECTED_CONDA_PATH env remove -n $CONDA_ENV_NAME
 
 # Create env with conda-verify and boa (Mamba but for conda-build) installed
 $EXPECTED_CONDA_PATH create -n $CONDA_ENV_NAME boa conda-verify -y
+
+# Add NSIS if needed
+if [[ $ENABLE_BUILD_BUNDLE == true ]]; then
+    if [[ $OSTYPE == "msys" ]]; then
+        $EXPECTED_CONDA_PATH install nsis -y
+    fi
+fi
 
 # Activate Conda environment
 . $WORKSPACE/mambaforge/etc/profile.d/conda.sh
@@ -131,4 +158,25 @@ fi
 
 if [[ $ENABLE_BUILD_WORKBENCH == true ]]; then
     conda mambabuild ./mantidworkbench/ $CLOBBER_FILE $WINDOWS_BUILD_OPTIONS
+fi
+
+if [[ $ENABLE_BUILD_BUNDLE == true ]]; then
+    # Find version number from the recipe files and clean up the result of the line
+    VERSION_NUM=$(grep "{% set version = " $WORKSPACE/conda-recipes/recipes/mantid/meta.yaml | awk -F[", "] '{print $5}' | sed "s/\"//" | sed "s/\"//")
+
+    #Determine if build nightly or release
+    if [[ $BUILD_NIGHTLY == true ]]; then
+        SUFFIX=-s Nightly
+        NIGHTLY_NAME=nightly
+    fi
+
+    if [[ $OSTYPE == 'msys'* ]]; then
+        BUNDLE_NAME="mantid$NIGHTLY_NAME-$VERSION_NUM-win64.exe"
+    elif [[ $OSTYPE == 'darwin'* ]]; then
+        BUNDLE_NAME="mantid$NIGHTLY_NAME-$VERSION_NUM-osx.dmg"
+    else
+        BUNDLE_NAME="mantid$NIGHTLY_NAME-$VERSION_NUM-linux.tar.gz"
+    fi
+
+    $SCRIPT_DIR/../../../installers/conda/win/create_package.sh $SUFFIX -c file://$EXPECTED_MAMBAFORGE_PATH/conda-bld $BUNDLE_NAME
 fi
