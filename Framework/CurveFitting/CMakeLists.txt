@@ -411,6 +411,13 @@ set(TEST_FILES
     CostFunctions/CostFuncUnweightedLeastSquaresTest.h
     CostFunctions/LeastSquaresTest.h
     CostFuncPoissonTest.h
+    EigenComplexMatrixTest.h
+    EigenComplexVectorTest.h
+    EigenFortranMatrixTest.h
+    EigenFortranVectorTest.h
+    EigenMatrixTest.h
+    EigenVectorTest.h
+    EigenViewTest.h
     FitMWTest.h
     FortranMatrixTest.h
     FortranVectorTest.h
