@@ -62,7 +62,7 @@ public:
   }
 
   void test_testSQDeltaFunction() {
-    /* const double THICKNESS = 0.001; // metres
+    const double THICKNESS = 0.001; // metres
 
     const int NTHETA = 900;
     const double ang_inc = 180.0 / NTHETA;
@@ -126,11 +126,11 @@ public:
                 (static_cast<double>(peakPos.back()) * ang_inc < 121));
     }
 
-    Mantid::API::AnalysisDataService::Instance().deepRemoveGroup("MuscatResults");*/
+    Mantid::API::AnalysisDataService::Instance().deepRemoveGroup("MuscatResults");
   }
 
   void test_output_workspaces() {
-    /*const double THICKNESS = 0.001; // metres
+    const double THICKNESS = 0.001; // metres
     auto inputWorkspace = SetupFlatPlateWorkspace(46, 1, 1.0, 1, 0.5, 1.0, 10 * THICKNESS, 10 * THICKNESS, THICKNESS);
 
     auto alg = createAlgorithm();
@@ -156,13 +156,13 @@ public:
         TS_ASSERT(matrixWsPtr);
       }
       Mantid::API::AnalysisDataService::Instance().deepRemoveGroup("MuscatResults");
-    }*/
+    }
   }
 
   void test_flat_plate_sample_single_scatter() {
     // generate a result corresponding to Figure 4 in the Mancinelli paper (flat
     // plate sample for once scattered neutrons) where there's an analytical solution
-    /*const double THICKNESS = 0.001; // metres
+    const double THICKNESS = 0.001; // metres
     auto inputWorkspace = SetupFlatPlateWorkspace(46, 1, 1.0, 1, 0.5, 1.0, 10 * THICKNESS, 10 * THICKNESS, THICKNESS,
                                                   DeltaEMode::Elastic);
 
@@ -187,7 +187,7 @@ public:
       const double delta(1e-05);
       TS_ASSERT_DELTA(singleScatterResult->y(SPECTRUMINDEXTOTEST)[0], analyticResult, delta);
       Mantid::API::AnalysisDataService::Instance().deepRemoveGroup("MuscatResults");
-    }*/
+    }
   }
 
   void run_flat_plate_sample_multiple_scatter(int nPaths, bool importanceSampling) {
@@ -534,7 +534,7 @@ public:
   void run_test_inelastic_on_realistic_structure_factor(const DeltaEMode::Type emode, int nPaths,
                                                         bool importanceSampling, bool simulateWSeparately,
                                                         int numberSimulationPoints, double expWeightMinusOne,
-                                                        double expWeightPlusOne) {
+                                                        double expWeightPlusOne, double delta) {
     // run test on a realistic structure factor. Validate against results in original Discus paper
 
     // calculate the S(Q,w) values based on a Lorentzian
@@ -609,7 +609,6 @@ public:
       alg->setProperty("NumberOfSimulationPoints", numberSimulationPoints);
     alg->setProperty("ImportanceSampling", importanceSampling);
     alg->setProperty("SimulateEnergiesIndependently", simulateWSeparately);
-    alg->setProperty("SeedValue", 222222222);
     alg->execute();
 
     if (alg->isExecuted()) {
@@ -620,7 +619,6 @@ public:
       Mantid::API::Workspace_sptr wsPtr2 = output->getItem("MuscatResults_Scatter_2");
       auto doubleScatterResult = std::dynamic_pointer_cast<Mantid::API::MatrixWorkspace>(wsPtr2);
 
-      const double delta(1e-04);
       const int SPECTRUMINDEXTOTEST = 2; // 20 degrees
       // check at the w=+/-1 points
       double actualWeightMinusOne = doubleScatterResult->y(SPECTRUMINDEXTOTEST)[33];
@@ -636,25 +634,30 @@ public:
   }
 
   void test_direct_on_realistic_structure_factor_with_importance_sampling() {
-    run_test_inelastic_on_realistic_structure_factor(DeltaEMode::Direct, 1000, true, false, -1, 0.00022, 0.00017);
+    run_test_inelastic_on_realistic_structure_factor(DeltaEMode::Direct, 1000, true, false, -1, 0.00023, 0.00019,
+                                                     2E-05);
   }
 
   void test_direct_on_realistic_structure_factor_without_importance_sampling() {
-    run_test_inelastic_on_realistic_structure_factor(DeltaEMode::Direct, 1000, false, false, -1, 0.00022, 0.00017);
+    run_test_inelastic_on_realistic_structure_factor(DeltaEMode::Direct, 1000, false, false, -1, 0.00023, 0.00019,
+                                                     1E-04);
   }
 
   void test_direct_on_realistic_structure_factor_without_importance_sampling_simulate_w_separately() {
-    run_test_inelastic_on_realistic_structure_factor(DeltaEMode::Direct, 1000, false, true, -1, 0.00022, 0.00017);
+    run_test_inelastic_on_realistic_structure_factor(DeltaEMode::Direct, 1000, false, true, -1, 0.00023, 0.00019,
+                                                     1E-04);
   }
 
   void test_indirect_on_realistic_structure_factor_without_importance_sampling() {
     // results are not vastly different to the direct geometry
-    run_test_inelastic_on_realistic_structure_factor(DeltaEMode::Indirect, 1000, false, false, -1, 0.00022, 0.00021);
+    run_test_inelastic_on_realistic_structure_factor(DeltaEMode::Indirect, 1000, false, false, -1, 0.00024, 0.00019,
+                                                     1E-04);
   }
 
   void test_indirect_on_realistic_structure_factor_with_deltaE_interpolation() {
     // only run simulation on half of the deltaE bins (even indices) and interpolate the rest (odd indices)
-    run_test_inelastic_on_realistic_structure_factor(DeltaEMode::Indirect, 1000, false, false, 40, 0.00023, 0.00021);
+    run_test_inelastic_on_realistic_structure_factor(DeltaEMode::Indirect, 1000, false, false, 40, 0.00024, 0.00019,
+                                                     1E-04);
   }
 
   //---------------------------------------------------------------------------
