@@ -35,16 +35,25 @@ def conda_build_linux() {
 def conda_build_macos() {
     conda_build_macos()
     archive_conda_build("osx-64")
+    archive_bundles("osx", "macos.dmg")
 }
 
 def conda_build_win(){
     bat "IF EXIST $CONDA_BLD_PATH RMDIR /S /Q $CONDA_BLD_PATH"
     bat "\"C:\\Program Files\\git\\bin\\bash.exe\" -c \"C:/Jenkins/workspace/$JOB_NAME/buildconfig/Jenkins/Conda/conda-build-recipes C:/Jenkins/workspace/$JOB_NAME --build-mantid --build-qt --build-workbench --build-bundle --nightly\""
     archive_conda_build("win-64")
+    archive_bundles("win", "win64.exe")
 }
 
 def archive_conda_build(build_name) {
     archiveArtifacts artifacts: "conda-bld/$build_name/*.tar.bz2",
+                allowEmptyArchive: false,
+                fingerprint: true,
+                onlyIfSuccessful: true
+}
+
+def archive_bundles(os, suffix_of_package){
+    archiveArtifacts artifacts: "installers/Conda/$os/*$suffix_of_package",
                 allowEmptyArchive: false,
                 fingerprint: true,
                 onlyIfSuccessful: true
