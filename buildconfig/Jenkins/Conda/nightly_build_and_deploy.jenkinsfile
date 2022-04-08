@@ -22,19 +22,24 @@ def conda_build_UNIX(){
     sh "$WORKSPACE/buildconfig/Jenkins/Conda/conda-build-recipes $WORKSPACE --build-mantid --build-qt --build-workbench --build-bundle"
 }
 
+def conda_build_macos(){
+    sh "rm -rf $CONDA_BLD_PATH"
+    sh "$WORKSPACE/buildconfig/Jenkins/Conda/conda-build-recipes $WORKSPACE --build-mantid --build-qt --build-workbench --build-bundle --nightly"
+}
+
 def conda_build_linux() {
     conda_build_UNIX()
     archive_conda_build("linux-64")
 }
 
 def conda_build_macos() {
-    conda_build_UNIX()
+    conda_build_macos()
     archive_conda_build("osx-64")
 }
 
 def conda_build_win(){
     bat "IF EXIST $CONDA_BLD_PATH RMDIR /S /Q $CONDA_BLD_PATH"
-    bat "\"C:\\Program Files\\git\\bin\\bash.exe\" -c \"C:/Jenkins/workspace/$JOB_NAME/buildconfig/Jenkins/Conda/conda-build-recipes C:/Jenkins/workspace/$JOB_NAME --build-mantid --build-qt --build-workbench --build-bundle\""
+    bat "\"C:\\Program Files\\git\\bin\\bash.exe\" -c \"C:/Jenkins/workspace/$JOB_NAME/buildconfig/Jenkins/Conda/conda-build-recipes C:/Jenkins/workspace/$JOB_NAME --build-mantid --build-qt --build-workbench --build-bundle --nightly\""
     archive_conda_build("win-64")
 }
 
