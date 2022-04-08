@@ -101,11 +101,11 @@ if [[ $ENABLE_BUILD_BUNDLE  == true ]]; then
     if [[ $OSTYPE == "msys"* ]]; then
         ENABLE_BUILD_MANTID=true
         ENABLE_BUILD_QT=true
-        ENABLE_WORKBENCH=true
+        ENABLE_BUILD_WORKBENCH=true
     elif [[ $OSTYPE == 'darwin'* ]]; then
         ENABLE_BUILD_MANTID=true
         ENABLE_BUILD_QT=true
-        ENABLE_WORKBENCH=true
+        ENABLE_BUILD_WORKBENCH=true
     else
         echo "Linux bundling is not currently supported please use conda instead"
         exit 1
@@ -118,15 +118,15 @@ $SCRIPT_DIR/download-and-install-mambaforge $EXPECTED_MAMBAFORGE_PATH $EXPECTED_
 # Remove conda env if it exists
 $EXPECTED_CONDA_PATH env remove -n $CONDA_ENV_NAME
 
-# Create env with conda-verify and boa (Mamba but for conda-build) installed
-$EXPECTED_CONDA_PATH create -n $CONDA_ENV_NAME boa conda-verify -y
-
 # Add NSIS if needed
 if [[ $ENABLE_BUILD_BUNDLE == true ]]; then
     if [[ $OSTYPE == "msys" ]]; then
-        $EXPECTED_CONDA_PATH install nsis -y
+        NSIS_NEEDED=nsis
     fi
 fi
+
+# Create env with conda-verify and boa (Mamba but for conda-build) installed
+$EXPECTED_CONDA_PATH create -n $CONDA_ENV_NAME boa conda-verify $NSIS_NEEDED -y
 
 # Activate Conda environment
 . $WORKSPACE/mambaforge/etc/profile.d/conda.sh
@@ -166,17 +166,17 @@ if [[ $ENABLE_BUILD_BUNDLE == true ]]; then
 
     #Determine if build nightly or release
     if [[ $BUILD_NIGHTLY == true ]]; then
-        SUFFIX=-s Nightly
-        NIGHTLY_NAME=nightly
+        SUFFIX="-s Nightly"
+        NIGHTLY_NAME="nightly"
     fi
 
     if [[ $OSTYPE == 'msys'* ]]; then
-        BUNDLE_NAME="mantid$NIGHTLY_NAME-$VERSION_NUM-win64.exe"
+        BUNDLE_NAME="mantid${NIGHTLY_NAME}-${VERSION_NUM}-win64.exe"
     elif [[ $OSTYPE == 'darwin'* ]]; then
-        BUNDLE_NAME="mantid$NIGHTLY_NAME-$VERSION_NUM-osx.dmg"
+        BUNDLE_NAME="mantid${NIGHTLY_NAME}-${VERSION_NUM}-osx.dmg"
     else
-        BUNDLE_NAME="mantid$NIGHTLY_NAME-$VERSION_NUM-linux.tar.gz"
+        BUNDLE_NAME="mantid${NIGHTLY_NAME}-${VERSION_NUM}-linux.tar.gz"
     fi
 
-    $SCRIPT_DIR/../../../installers/conda/win/create_package.sh $SUFFIX -c file://$EXPECTED_MAMBAFORGE_PATH/conda-bld $BUNDLE_NAME
+    $SCRIPT_DIR/../../../installers/conda/win/create_package.sh $SUFFIX -c file:///$EXPECTED_MAMBAFORGE_PATH/envs/mantid-conda-build-env/conda-bld $BUNDLE_NAME
 fi
