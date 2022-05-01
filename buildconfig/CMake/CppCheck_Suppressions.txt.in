@@ -235,10 +235,8 @@ constParameter:${CMAKE_SOURCE_DIR}/Framework/CurveFitting/src/Functions/CrystalE
 constParameter:${CMAKE_SOURCE_DIR}/Framework/CurveFitting/src/Functions/CrystalElectricField.cpp:450
 constParameter:${CMAKE_SOURCE_DIR}/Framework/CurveFitting/src/Functions/CrystalElectricField.cpp:480
 identicalInnerCondition:${CMAKE_SOURCE_DIR}/Framework/CurveFitting/src/Functions/CrystalFieldMultiSpectrum.cpp:128
-oppositeInnerCondition:${CMAKE_SOURCE_DIR}/Framework/CurveFitting/src/Functions/CrystalFieldMultiSpectrum.cpp:252
-useStlAlgorithm:${CMAKE_SOURCE_DIR}/Framework/CurveFitting/src/Functions/CrystalFieldMultiSpectrum.cpp:280
-constParameter:${CMAKE_SOURCE_DIR}/Framework/CurveFitting/src/RalNlls/TrustRegion.cpp:231
-constParameter:${CMAKE_SOURCE_DIR}/Framework/CurveFitting/src/RalNlls/TrustRegion.cpp:231
+constParameter:${CMAKE_SOURCE_DIR}/Framework/CurveFitting/src/RalNlls/TrustRegion.cpp:301
+constParameter:${CMAKE_SOURCE_DIR}/Framework/CurveFitting/src/RalNlls/TrustRegion.cpp:301
 unsignedLessThanZero:${CMAKE_SOURCE_DIR}/Framework/CurveFitting/src/ParDomain.cpp:72
 stlFindInsert:${CMAKE_SOURCE_DIR}/Framework/DataHandling/src/CreateChunkingFromInstrument.cpp:400
 useStlAlgorithm:${CMAKE_SOURCE_DIR}/Framework/DataHandling/src/CreateChunkingFromInstrument.cpp:231
