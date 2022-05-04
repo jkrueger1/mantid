@@ -223,9 +223,9 @@ unreadVariable:${CMAKE_SOURCE_DIR}/Framework/CurveFitting/src/Algorithms/Profile
 unreadVariable:${CMAKE_SOURCE_DIR}/Framework/CurveFitting/src/Algorithms/ProfileChiSquared1D.cpp:244
 unreadVariable:${CMAKE_SOURCE_DIR}/Framework/CurveFitting/src/Algorithms/ProfileChiSquared1D.cpp:306
 unreadVariable:${CMAKE_SOURCE_DIR}/Framework/CurveFitting/src/Algorithms/ProfileChiSquared1D.cpp:307
-knownConditionTrueFalse:${CMAKE_SOURCE_DIR}/Framework/CurveFitting/src/CostFunctions/CostFuncFitting.cpp:379
+knownConditionTrueFalse:${CMAKE_SOURCE_DIR}/Framework/CurveFitting/src/CostFunctions/CostFuncFitting.cpp:381
 unsignedLessThanZero:${CMAKE_SOURCE_DIR}/Framework/CurveFitting/src/FuncMinimizers/FABADAMinimizer.cpp:1069
-constParameter:${CMAKE_SOURCE_DIR}/Framework/CurveFitting/src/FuncMinimizers/TrustRegionMinimizer.cpp:814
+constParameter:${CMAKE_SOURCE_DIR}/Framework/CurveFitting/src/FuncMinimizers/TrustRegionMinimizer.cpp:815
 uninitDerivedMemberVar:${CMAKE_SOURCE_DIR}/Framework/CurveFitting/src/Functions/BivariateNormal.cpp:65
 unsignedLessThanZero:${CMAKE_SOURCE_DIR}/Framework/CurveFitting/src/Functions/BivariateNormal.cpp:166
 unreadVariable:${CMAKE_SOURCE_DIR}/Framework/CurveFitting/src/Functions/Convolution.cpp:224
@@ -235,8 +235,8 @@ constParameter:${CMAKE_SOURCE_DIR}/Framework/CurveFitting/src/Functions/CrystalE
 constParameter:${CMAKE_SOURCE_DIR}/Framework/CurveFitting/src/Functions/CrystalElectricField.cpp:450
 constParameter:${CMAKE_SOURCE_DIR}/Framework/CurveFitting/src/Functions/CrystalElectricField.cpp:480
 identicalInnerCondition:${CMAKE_SOURCE_DIR}/Framework/CurveFitting/src/Functions/CrystalFieldMultiSpectrum.cpp:128
-constParameter:${CMAKE_SOURCE_DIR}/Framework/CurveFitting/src/RalNlls/TrustRegion.cpp:301
-constParameter:${CMAKE_SOURCE_DIR}/Framework/CurveFitting/src/RalNlls/TrustRegion.cpp:301
+constParameter:${CMAKE_SOURCE_DIR}/Framework/CurveFitting/src/RalNlls/TrustRegion.cpp:305
+constParameter:${CMAKE_SOURCE_DIR}/Framework/CurveFitting/src/RalNlls/TrustRegion.cpp:305
 unsignedLessThanZero:${CMAKE_SOURCE_DIR}/Framework/CurveFitting/src/ParDomain.cpp:72
 stlFindInsert:${CMAKE_SOURCE_DIR}/Framework/DataHandling/src/CreateChunkingFromInstrument.cpp:400
 useStlAlgorithm:${CMAKE_SOURCE_DIR}/Framework/DataHandling/src/CreateChunkingFromInstrument.cpp:231
