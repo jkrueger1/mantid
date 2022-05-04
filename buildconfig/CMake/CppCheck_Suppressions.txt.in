@@ -644,15 +644,4 @@ constParameter:${CMAKE_SOURCE_DIR}/qt/scientific_interfaces/ISISReflectometry/GU
 useStlAlgorithm:${CMAKE_SOURCE_DIR}/qt/scientific_interfaces/ISISReflectometry/GUI/Batch/BatchJobManager.cpp:152
 constParameter:${CMAKE_SOURCE_DIR}/qt/scientific_interfaces/ISISReflectometry/GUI/Instrument/InstrumentPresenter.cpp:18
 useStlAlgorithm:${CMAKE_SOURCE_DIR}/qt/scientific_interfaces/ISISReflectometry/GUI/MainWindow/MainWindowPresenter.cpp:153
-knownConditionTrueFalse:${CMAKE_SOURCE_DIR}/Framework/CurveFitting/src/EigenMatrixView.cpp:25
-knownConditionTrueFalse:${CMAKE_SOURCE_DIR}/Framework/CurveFitting/src/EigenMatrixView.cpp:28
-knownConditionTrueFalse:${CMAKE_SOURCE_DIR}/Framework/CurveFitting/src/EigenMatrixView.cpp:30
-knownConditionTrueFalse:${CMAKE_SOURCE_DIR}/Framework/CurveFitting/src/EigenMatrixView.cpp:46
-knownConditionTrueFalse:${CMAKE_SOURCE_DIR}/Framework/CurveFitting/src/EigenMatrixView.cpp:49
-knownConditionTrueFalse:${CMAKE_SOURCE_DIR}/Framework/CurveFitting/src/EigenMatrixView.cpp:51
-knownConditionTrueFalse:${CMAKE_SOURCE_DIR}/Framework/CurveFitting/src/EigenMatrixView.cpp:90
-knownConditionTrueFalse:${CMAKE_SOURCE_DIR}/Framework/CurveFitting/src/EigenMatrixView.cpp:92
-knownConditionTrueFalse:${CMAKE_SOURCE_DIR}/Framework/CurveFitting/src/EigenMatrixView.cpp:108
-knownConditionTrueFalse:${CMAKE_SOURCE_DIR}/Framework/CurveFitting/src/EigenMatrixView.cpp:110
-knownConditionTrueFalse:${CMAKE_SOURCE_DIR}/Framework/CurveFitting/src/EigenVectorView.cpp:33
 returnTempReference:${CMAKE_SOURCE_DIR}/qt/scientific_interfaces/Indirect/IndirectFitData.cpp:127
