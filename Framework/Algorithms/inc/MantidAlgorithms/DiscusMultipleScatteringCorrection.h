@@ -107,7 +107,7 @@ private:
   void setWorkspaceName(const API::MatrixWorkspace_sptr &ws, std::string wsName);
   void createInvPOfQWorkspaces(MaterialWorkspaceMappings &matWSs, size_t nhists);
   void convertToLogWorkspace(const API::MatrixWorkspace_sptr &SOfQ);
-  void calculateQSQIntegralAsFunctionOfK();
+  void calculateQSQIntegralAsFunctionOfK(MaterialWorkspaceMappings &matWSs, const double specialK);
   void prepareCumulativeProbForQ(double kinc, const MaterialWorkspaceMappings &PInvOfQs);
   void getXMinMax(const Mantid::API::MatrixWorkspace &ws, double &xmin, double &xmax) const;
   void prepareQSQ(double kinc);
