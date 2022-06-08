@@ -50,7 +50,8 @@ def SPLINE(X,Y,N,YP1,YPN,Y2):
 
 
 def SPLINT(X, func):
-      return func(X)
+      return float(func(X))
+
 
       KLO=1
       KHI=N

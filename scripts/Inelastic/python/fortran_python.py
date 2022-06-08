@@ -18,6 +18,7 @@ code is changed by as little as possible
 from math import log10, floor
 
 def round_sig(x, sig=8, small_value=1.0e-9):
+
     return round(x, sig - int(floor(log10(max(abs(x), abs(small_value))))) - 1)
 
 def get_range(start, end, dx=1):
@@ -53,7 +54,7 @@ class vec(object):
         print("testing",j)
         
     def set(self, j, value):
-        self._vec[j-1] = value
+        self._vec[j-1] = round_sig(value)
 
     def output(self):
         return self._vec
@@ -62,13 +63,14 @@ class vec(object):
         return self._vec[start-1:end+1]
 
     def fill(self, value, n,start=1):
-        self._vec[start-1:n+start-2] = value
+        self._vec[start-1:n+start-2] = round_sig(value)
         
     def get_from(self, start=1):
         return self._vec[start-1:]
         
     def copy(self, vector, start_i=1):
-       self._vec[start_i-1:start_i-1+len(vector)] = vector
+       v = [round_sig(k) for k in vector]
+       self._vec[start_i-1:start_i-1+len(vector)] = v
 
     #def update(self,vector, start):
     #    self._vec[start-1:] = vector
@@ -124,6 +126,7 @@ class matrix_2(vec):
 
     def copy(self, vec, start_i=1, start_j=1):
        k = self._index_for_vec(start_i,start_j)
+       v = [round_sig(a) for a in vec]
        self._vec[k:k+len(vec)] = vec
    
     def output_as_vec(self):
@@ -193,7 +196,8 @@ class matrix_3(vec):
     
     def copy(self, vec, start_i=1, start_j=1, start_k=1):
        k = self._index_for_vec(start_i,start_j,start_k)
-       self._vec[k:k+len(vec)] = vec  
+       v = [round_sig(a) for a in vec]
+       self._vec[k:k+len(vec)] = v
                           
     def dimensions(self):
         return 3    
