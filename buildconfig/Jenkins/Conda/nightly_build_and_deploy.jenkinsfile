@@ -144,7 +144,7 @@ pipeline {
             beforeAgent true
             environment name: 'BUILD_PACKAGE_LINUX', value: 'true'
           }
-          agent { label 'conda-build-linux' }
+          agent { label 'isis-ndw1851' }
           options { timestamps () }
           steps {
             conda_build_unix("linux-64")
