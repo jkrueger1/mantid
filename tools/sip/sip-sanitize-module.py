@@ -64,8 +64,12 @@ def sanitize_generated_module(generated_module_filepath: str):
         module_code_orig = sip_module_orig.readlines()
 
     sanitized_code = []
+    sanitized_code.append('#ifdef _DEBUG\n')
+    sanitized_code.append('#undef _DEBUG\n')
     for line_orig in module_code_orig:
         sanitized_code.append(THROW_SPEC_RE.sub('noexcept(false)', line_orig))
+    sanitized_code.append('#define _DEBUG\n')
+    sanitized_code.append('#endif\n')
 
     with open(generated_module_filepath, 'w') as sanitized_module:
         sanitized_module.write(''.join(sanitized_code))

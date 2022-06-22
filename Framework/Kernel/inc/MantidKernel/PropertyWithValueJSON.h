@@ -74,9 +74,11 @@ template <typename T> struct ToCpp<std::vector<T>> {
     std::vector<T> arrayValues;
     arrayValues.reserve(value.size());
     auto toCpp = ToCpp<T>();
-    for (const auto &elem : value) {
+    for (Json::ArrayIndex i = 0; i < value.size(); i++) {
+      // for (const auto &elem : value) {
       try {
-        arrayValues.emplace_back(toCpp(elem));
+        arrayValues.emplace_back(toCpp(value[i]));
+        // arrayValues.emplace_back(toCpp(elem));
       } catch (Json::Exception &exc) {
         throw std::invalid_argument("Mixed-type JSON array values not supported:" + std::string(exc.what()));
       }

@@ -30,7 +30,8 @@ bool validateNXAttribute(const Json::Value &attributes, const std::string &NXAtt
 
 Json::Value get(const Json::Value &entry, const std::string &NXAttribute) {
   Json::Value item;
-  for (const auto &child : entry) {
+  for (Json::ArrayIndex i = 0; i < entry.size(); i++) {
+    const auto &child = entry[i];
     const auto &attributes = child[ATTRIBUTES];
     if (!attributes.isNull() && validateNXAttribute(attributes, NXAttribute)) {
       item = child;
@@ -44,7 +45,8 @@ std::vector<Json::Value> getAllNXComponents(const Json::Value &instrument, const
   std::vector<Json::Value> nxComponents;
 
   const auto &components = instrument[CHILDREN];
-  for (const auto &component : components) {
+  for (Json::ArrayIndex i = 0; i < components.size(); i++) {
+    const auto &component = components[i];
     auto attributes = component[ATTRIBUTES];
     if (validateNXAttribute(attributes, NXClass))
       nxComponents.emplace_back(component);
@@ -80,7 +82,8 @@ template <class T> void recursiveFill(const Json::Value &jsonArray, std::vector<
     addSingleValue(jsonArray, fillArray);
   }
 
-  for (const auto &val : jsonArray) {
+  for (Json::ArrayIndex i = 0; i < jsonArray.size(); i++) {
+    const auto &val = jsonArray[i];
     if (val.isArray())
       recursiveFill<T>(val, fillArray);
     else {
@@ -103,8 +106,8 @@ void recursiveDependencySearch(const Json::Value &parent, std::vector<std::strin
     return;
 
   const auto &children = parent[CHILDREN];
-  for (const auto &child : children)
-    recursiveDependencySearch(child, values);
+  for (Json::ArrayIndex i = 0; i < children.size(); i++)
+    recursiveDependencySearch(children[i], values);
 }
 
 template <class T> void extractDatasetValues(const Json::Value &datasetParent, std::vector<T> &data) {
@@ -142,7 +145,8 @@ void extractShapeInformation(const Json::Value &shape, std::vector<uint32_t> &cy
   const auto &children = shape[CHILDREN];
   isOffGeometry = false;
   if (attributes[VALUES] == NX_OFF) {
-    for (const auto &child : children) {
+    for (Json::ArrayIndex i = 0; i < children.size(); i++) {
+      const auto &child = children[i];
       if (child[NAME] == "faces")
         extractDatasetValues<uint32_t>(child, faces);
       else if (child[NAME] == "vertices")
@@ -158,7 +162,8 @@ void extractShapeInformation(const Json::Value &shape, std::vector<uint32_t> &cy
   }
 
   if (attributes[VALUES] == NX_CYLINDER) {
-    for (const auto &child : children) {
+    for (Json::ArrayIndex i = 0; i < children.size(); i++) {
+      const auto &child = children[i];
       if (child[NAME] == "cylinders")
         extractDatasetValues<uint32_t>(child, cylinders);
       else if (child[NAME] == "vertices")
@@ -207,13 +212,16 @@ void verifyDependency(const Json::Value &root, const Json::Value &dependency) {
 
 Eigen::Vector3d getTransformationAxis(const Json::Value &root, const Json::Value &attributes) {
   std::vector<double> axis;
-  for (const auto &attribute : attributes) {
+  for (Json::ArrayIndex i = 0; i < attributes.size(); i++) {
+    const auto &attribute = attributes[i];
     if (attribute[NAME] == DEPENDS_ON)
       verifyDependency(root, attribute);
     else if (attribute[NAME] == "vector") {
       const auto &values = attribute[VALUES];
       axis.resize(values.size());
-      std::transform(values.begin(), values.end(), axis.begin(), [](const Json::Value &val) { return val.asDouble(); });
+      for (Json::ArrayIndex i = 0; i < values.size(); i++) {
+        axis[i] = values[i].asDouble();
+      }
     }
   }
 
@@ -223,7 +231,8 @@ Eigen::Vector3d getTransformationAxis(const Json::Value &root, const Json::Value
 void extractStream(const Json::Value &group, std::string &topic, std::string &source, std::string &writerModule) {
   const auto &children = group[CHILDREN];
 
-  for (const auto &child : children) {
+  for (Json::ArrayIndex i = 0; i < children.size(); i++) {
+    const auto &child = children;
     if (child["type"] == "stream") {
       const auto &stream = child["stream"];
       topic = stream["topic"].asString();
@@ -261,7 +270,8 @@ Json::Value getRoot(const std::string &jsonGeometry) {
 std::string extractInstrumentName(const Json::Value &instrument) {
   std::string name;
   const auto &children = instrument[CHILDREN];
-  for (const auto &child : children) {
+  for (Json::ArrayIndex i = 0; i < children.size(); i++) {
+    const auto &child = children[i];
     if (child[NAME] == NAME)
       name = child["values"].asString();
   }
@@ -340,7 +350,9 @@ void JSONGeometryParser::extractSampleContent() {
   m_samplePosition = Eigen::Vector3d(0, 0, 0);
   m_sampleOrientation = Eigen::Quaterniond(Eigen::AngleAxisd(0, Eigen::Vector3d(1, 0, 0)));
   m_sampleName = (*m_sample)[NAME].asString();
-  for (const auto &child : children) {
+  for (Json::ArrayIndex i = 0; i < children.size(); i++) {
+    // for (const auto &child : children) {
+    auto child = children[i];
     if (validateNXAttribute(child[ATTRIBUTES], NX_TRANSFORMATIONS))
       extractTransformations(child, m_samplePosition, m_sampleOrientation);
   }
@@ -353,7 +365,8 @@ void JSONGeometryParser::extractSourceContent() {
   if (!m_source->isNull()) {
     m_sourceName = (*m_source)[NAME].asCString();
     const auto &children = (*m_source)[CHILDREN];
-    for (const auto &child : children) {
+    for (Json::ArrayIndex i = 0; i < children.size(); i++) {
+      const auto &child = children[i];
       if (validateNXAttribute(child[ATTRIBUTES], NX_TRANSFORMATIONS))
         extractTransformations(child, m_sourcePosition, m_sourceOrientation);
     }
@@ -381,7 +394,8 @@ void JSONGeometryParser::extractTransformations(const Json::Value &transformatio
 
   const auto &children = transformations[CHILDREN];
 
-  for (const auto &transformation : children) {
+  for (Json::ArrayIndex i = 0; i < children.size(); i++) {
+    const auto &transformation = children[i];
     double value;
     if (transformation[NAME] == "location") {
       extractTransformationDataset(transformation, value, location);
@@ -414,7 +428,9 @@ void JSONGeometryParser::extractDetectorContent() {
 
     auto children = (*detector)[CHILDREN];
 
-    for (const auto &child : children) {
+    for (Json::ArrayIndex i = 0; i < children.size(); i++) {
+      const auto &child = children[i];
+      // for (const auto &child : children) {
       if (child[NAME] == DETECTOR_IDS)
         extractDatasetValues<detid_t>(child, detIDs);
       else if (child[NAME] == X_PIXEL_OFFSET)
@@ -461,7 +477,8 @@ void JSONGeometryParser::extractMonitorContent() {
     return;
 
   int monitorID = -1;
-  for (const auto &monitor : m_jsonMonitors) {
+  for (Json::ArrayIndex i = 0; i < m_jsonMonitors.size(); i++) {
+    const auto &monitor = m_jsonMonitors[i];
     const auto &children = (*monitor)[CHILDREN];
     auto name = (*monitor)[NAME].asString();
     if (children.empty())
@@ -472,7 +489,8 @@ void JSONGeometryParser::extractMonitorContent() {
      * decreasing. */
     mon.detectorID = monitorID--;
 
-    for (const auto &child : children) {
+    for (Json::ArrayIndex i = 0; i < children.size(); i++) {
+      const auto &child = children[i];
       const auto &val = child[VALUES];
       if (child[NAME] == NAME)
         mon.name = val.asString();
@@ -514,7 +532,8 @@ void JSONGeometryParser::extractChopperContent() {
       throw std::invalid_argument("Full chopper definition missing in JSON provided.");
     Chopper chop;
     chop.componentName = (*chopper)[NAME].asString();
-    for (const auto &child : children) {
+    for (Json::ArrayIndex i = 0; i < children.size(); i++) {
+      const auto &child = children[i];
       const auto &val = child[VALUES];
       if (child[NAME] == "name")
         chop.name = val.asString();

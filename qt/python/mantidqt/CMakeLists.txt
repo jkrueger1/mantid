@@ -36,16 +36,18 @@ add_custom_target(mantidqt_resources ALL DEPENDS ${_output_res_py})
 
 add_dependencies(mantidqt mantidqt_resources mantidqt_commonqt5 mantidqt_instrumentviewqt5 mantidqt_iconsqt5)
 if(MSVC)
-  # Debug builds need libraries that are linked with MSVC debug runtime
-  add_custom_command(
-    TARGET mantidqt
-    POST_BUILD
-    COMMAND
-      if 1==$<CONFIG:Debug> ${CMAKE_COMMAND} -E copy_directory
-      ${MSVC_PYTHON_EXECUTABLE_DIR}/msvc-site-packages/debug/PyQt5
-      ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${CMAKE_CFG_INTDIR}/PyQt5
-    COMMENT "Copying debug PyQt5 to bin/Debug"
-  )
+  if(NOT CONDA_ENV)
+    # Debug builds need libraries that are linked with MSVC debug runtime
+    add_custom_command(
+      TARGET mantidqt
+      POST_BUILD
+      COMMAND
+        if 1==$<CONFIG:Debug> ${CMAKE_COMMAND} -E copy_directory
+        ${MSVC_PYTHON_EXECUTABLE_DIR}/msvc-site-packages/debug/PyQt5
+        ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${CMAKE_CFG_INTDIR}/PyQt5
+      COMMENT "Copying debug PyQt5 to bin/Debug"
+    )
+  endif()
 endif()
 
 # Testing
