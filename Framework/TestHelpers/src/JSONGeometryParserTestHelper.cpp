@@ -90,10 +90,11 @@ void resizeValues(Json::Value &values, size_t size) {
     for (Json::ArrayIndex i = 0; i < values.size(); ++i)
       values[i].resize(0);
   } else {
-    for (auto &val : values) {
+    for (Json::ArrayIndex i = 0; i < values.size(); ++i) {
+      auto &val = values[i];
       if (val.size() > 0) {
-        for (auto &child : val)
-          resizeValues(child, size);
+        for (Json::ArrayIndex i = 0; i < values.size(); ++i)
+          resizeValues(values[i], size);
       } else
         resizeValues(val, size);
     }
@@ -102,8 +103,8 @@ void resizeValues(Json::Value &values, size_t size) {
 
 template <class T> void fillValues(Json::Value &values, const std::vector<T> &fillArray, size_t &start, size_t size) {
   if (!values.isNull() && !values.empty()) {
-    for (auto &val : values)
-      fillValues<T>(val, fillArray, start, size);
+    for (Json::ArrayIndex i = 0; i < values.size(); ++i)
+      fillValues<T>(values[i], fillArray, start, size);
   } else {
     for (size_t i = 0; i < size; ++i) {
       values[static_cast<int>(i)] = convertToJsonValue<T>(fillArray[start + i]);

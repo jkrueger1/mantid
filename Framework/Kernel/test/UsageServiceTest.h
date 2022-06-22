@@ -68,7 +68,8 @@ public:
     auto members = root.getMemberNames();
     std::vector<std::string> expectedMembers{"ParaView", "application", "host",       "mantidSha1", "mantidVersion",
                                              "osArch",   "osName",      "osReadable", "osVersion",  "uid"};
-    for (auto expectedMember : expectedMembers) {
+    for (Json::ArrayIndex i = 0; i < expectedMembers.size(); i++) {
+      auto expectedMember = expectedMembers[i];
       TSM_ASSERT(expectedMember + " not found",
                  std::find(members.begin(), members.end(), expectedMember) != members.end());
     }
@@ -94,13 +95,15 @@ public:
     Mantid::JsonHelpers::parse(message, &root);
     auto members = root.getMemberNames();
     std::vector<std::string> expectedMembers{"mantidVersion", "features"};
-    for (auto expectedMember : expectedMembers) {
+    for (Json::ArrayIndex i = 0; i < expectedMembers.size(); i++) {
+      auto expectedMember = expectedMembers[i];
       TSM_ASSERT(expectedMember + " not found",
                  std::find(members.begin(), members.end(), expectedMember) != members.end());
     }
 
     auto features = root["features"];
-    for (auto &feature : features) {
+    for (Json::ArrayIndex i = 0; i < features.size(); i++) {
+      auto &feature = features[i];
       std::string name = feature["name"].asString();
       std::string type = feature["type"].asString();
       bool internal = feature["internal"].asBool();

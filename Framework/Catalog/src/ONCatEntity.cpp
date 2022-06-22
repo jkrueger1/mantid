@@ -67,7 +67,6 @@ std::vector<ONCatEntity> ONCatEntity::vectorFromJSONStream(std::istream &streamC
 
   for (Json::ArrayIndex i = 0; i < (*content).size(); i++) {
     auto subContent = (*content)[i];
-    // for (const auto &subContent : *content) {
     const auto id = subContent.get("id", "").asString();
     const auto type = subContent.get("type", "").asString();
 

@@ -218,7 +218,6 @@ DownloadInstrument::StringToStringMap DownloadInstrument::processRepository() {
   std::unordered_set<std::string> repoFilenames;
 
   for (Json::ArrayIndex i = 0; i < serverContents.size(); i++) {
-    // for (auto &serverElement : serverContents) {
     auto &serverElement = serverContents[i];
     std::string name = serverElement.get("name", "").asString();
     repoFilenames.insert(name);
